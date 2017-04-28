@@ -1,6 +1,5 @@
 package levsha
 
-
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 import macrocompat.bundle
@@ -18,7 +17,7 @@ import macrocompat.bundle
     q"""
       $rc.openNode($tag)
       ..$children
-      $rc.closeNode()
+      $rc.closeNode($tag)
     """
   }
 
@@ -28,7 +27,7 @@ import macrocompat.bundle
     q"$rc.setAttr($attr, $value)"
   }
 
-  def toKebab(tree: Tree) = tree match {
+  def toKebab(tree: Tree): String = tree match {
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
     case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
   }

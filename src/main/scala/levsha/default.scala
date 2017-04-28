@@ -6,9 +6,7 @@ package levsha
   */
 object default {
 
-  val context = new TemplateContext[Nothing]()
-
-  val dsl = new TemplateDsl[Nothing](context)
+  val dsl = new TemplateDsl[Nothing](new TemplateContext[Nothing]())
 
   /**
     * Provides Text render context to make html string
@@ -19,8 +17,8 @@ object default {
     * }
     * }}}
     */
-  def renderHtml(f: context.RenderContext => context.Node.type): String = {
-    val renderContext = new context.TextRenderContext()
+  def renderHtml(f: dsl.templateContext.RenderContext => dsl.templateContext.Node.type): String = {
+    val renderContext = new dsl.templateContext.TextRenderContext()
     f(renderContext)
     renderContext.mkString
   }

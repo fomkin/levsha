@@ -16,7 +16,7 @@ class TemplateContext[MiscType] {
 
   trait RenderContext {
     def openNode(name: String): Unit
-    def closeNode(): Node.type
+    def closeNode(name: String): Node.type
     def setAttr(name: String, value: String): Attr.type
     def addTextNode(text: String): Text.type
     def addMisc(misc: MiscType): Misc.type
@@ -26,29 +26,27 @@ class TemplateContext[MiscType] {
   class TextRenderContext extends RenderContext {
 
     private val builder = StringBuilder.newBuilder
-    private var nodeName: String = _
+    private var attrsStarted = false
 
     def openNode(name: String): Unit = {
-      if (nodeName != null) builder.append('>')
-      nodeName = name
+      if (attrsStarted) builder.append('>')
       builder.append('<')
       builder.append(name)
-      builder.append(' ')
+      attrsStarted = true
     }
 
-    def closeNode(): Node.type = {
+    def closeNode(name: String): Node.type = {
       builder.append('<')
       builder.append('/')
-      builder.append(nodeName)
+      builder.append(name)
       builder.append('>')
-      nodeName = null
+      attrsStarted = false
       Node
     }
 
     def setAttr(name: String, value: String): Attr.type = {
-      builder.append('"')
+      builder.append(' ')
       builder.append(name)
-      builder.append('"')
       builder.append('=')
       builder.append('"')
       builder.append(value)
@@ -57,7 +55,7 @@ class TemplateContext[MiscType] {
     }
 
     def addTextNode(text: String): Text.type = {
-      if (nodeName != null) builder.append('>')
+      if (attrsStarted) builder.append('>')
       builder.append(text)
       Text
     }
@@ -71,7 +69,7 @@ class TemplateContext[MiscType] {
   /** This render context does nothing */
   class DummyRenderContext extends RenderContext {
     def openNode(name: String): Unit = {}
-    def closeNode(): Node.type = Node
+    def closeNode(name: String): Node.type = Node
     def setAttr(name: String, value: String): Attr.type = Attr
     def addTextNode(text: String): Text.type = Text
     def addMisc(misc: MiscType): Misc.type = Misc
