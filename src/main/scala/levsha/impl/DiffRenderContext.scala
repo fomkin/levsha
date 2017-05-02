@@ -63,32 +63,24 @@ final class DiffRenderContext[MiscType](
     a.flip()
     b.flip()
 
-    /** Get current op or END */
     def op(x: ByteBuffer) = {
       if (x.hasRemaining) x.get()
       else END.toByte
     }
-
     def readOpA() = op(a)
-
     def readOpB() = op(b)
-
     def readTagA() = a.getInt()
-
     def readTagB() = b.getInt()
-
     def skipText(x: ByteBuffer) = {
       val len = x.getShort()
       x.position(x.position + len)
     }
-
     def readText(x: ByteBuffer) = {
       val len = x.getShort()
       val bytes = new Array[Byte](len)
       x.get(bytes)
       new String(bytes, StandardCharsets.UTF_8)
     }
-
     def skipAttr(x: ByteBuffer) = {
       x.getInt()
       val len = x.getShort()
@@ -98,37 +90,6 @@ final class DiffRenderContext[MiscType](
     def readAttr(x: ByteBuffer) = identIndex(x.getInt())
     def readAttrText(x: ByteBuffer) = readText(x)
     def unOp(x: ByteBuffer) = x.position(x.position - 1)
-    /*
-    -- skip in x until close current tag
-    skip_loop(x):
-     start_level = level
-     while level >= start_level
-       if op x == OPEN then inc level
-       else if op x == CLOSE then dec level
-       else if op x == TEXT then skip test
-       else if op x == ATTR then skip attr
-       else if op x == END then fail
-    main_loop:
-     while a not empty
-       if op a == Open and op b == Open
-         inc id
-         if tag a != tag b
-           replace current b tag with a tag
-           skip_loop b
-           create_loop a
-         else
-           ignore tag open and inc level
-       if op a == Text and op b == Open
-         inc id
-         replace current b tag with text a
-         skip_loop b
-       if op a == Open and op b == Text
-         inc id
-         replace current b text with a tag
-         create_loop a
-       if op a == Close or End and b != Close and b != end
-         create_loop b
-    */
 
     def skipLoop(x: ByteBuffer) = {
       val startLevel = counter.getLevel
@@ -209,6 +170,13 @@ final class DiffRenderContext[MiscType](
         } else {
           counter.incLevel()
         }
+      } else if (opA == TEXT && opB == TEXT) {
+        val textA = readText(a)
+        val textB = readText(b)
+        counter.incId()
+        if (textA != textB) {
+          performer.createText(counter.currentString, textA)
+        }
       } else if (opA == TEXT && opB == OPEN) {
         val aText = readText(a)
         readTagB() // skip tag b
@@ -262,6 +230,14 @@ object DiffRenderContext {
     def setAttr(id: String, name: String, value: String): Unit
     def createText(id: String, text: String): Unit
     def create(id: String, tag: String): Unit
+  }
+
+  final class DummyChangesPerformer extends ChangesPerformer {
+    def removeAttr(id: String, name: String): Unit = ()
+    def remove(id: String): Unit = ()
+    def setAttr(id: String, name: String, value: String): Unit = ()
+    def createText(id: String, text: String): Unit = ()
+    def create(id: String, tag: String): Unit = ()
   }
 
   type MiscCallback[MiscType] = (String, MiscType) => Unit

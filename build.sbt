@@ -12,7 +12,8 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // Test
-  "com.lihaoyi" %% "utest" % "0.4.5" % "test"
+  "com.lihaoyi" %% "utest" % "0.4.5" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 )
 
 testFrameworks += new TestFramework("utest.runner.Framework")
