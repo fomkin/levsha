@@ -6,19 +6,21 @@ import scala.language.implicitConversions
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-class TemplateDsl[MiscType](val templateContext: TemplateContext[MiscType]) {
+class TemplateDsl[MiscType] {
 
-  import templateContext._
-
+  import RenderUnit._
+  
+  type RC = RenderContext[MiscType]
+  
   /** Converts () to empty template */
   @inline implicit def unit(value: Unit): RenderUnit = Empty
 
   /** Converts [[String]] to text document node */
-  @inline implicit def text(value: String)(implicit rc: RenderContext): Text.type =
+  @inline implicit def text(value: String)(implicit rc: RC): Text.type =
     rc.addTextNode(value)
 
   /** Converts [[MiscType]] to text document node */
-  @inline implicit def misc(value: MiscType)(implicit rc: RenderContext): Misc.type =
+  @inline implicit def misc(value: MiscType)(implicit rc: RC): Misc.type =
     rc.addMisc(value)
 
   /** Converts iterable of templates to document fragment */
@@ -36,11 +38,11 @@ class TemplateDsl[MiscType](val templateContext: TemplateContext[MiscType]) {
     * }}}
     */
   implicit final class SymbolOps(s: Symbol) {
-    def apply(children: RenderUnit*)(implicit rc: RenderContext): Node.type =
-      macro TemplateMacro.node
+    def apply(children: RenderUnit*)(implicit rc: RC): Node.type =
+      macro TemplateDslMacro.node
 
-    def /=(value: String)(implicit rc: RenderContext): Attr.type =
-      macro TemplateMacro.attr
+    def /=(value: String)(implicit rc: RC): Attr.type =
+      macro TemplateDslMacro.attr
   }
 
   @deprecated("Use () instead of <>", since = "0.4.0")

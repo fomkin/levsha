@@ -7,7 +7,7 @@ import macrocompat.bundle
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-@bundle class TemplateMacro(val c: blackbox.Context) {
+@bundle class TemplateDslMacro(val c: blackbox.Context) {
 
   import c.universe._
 
