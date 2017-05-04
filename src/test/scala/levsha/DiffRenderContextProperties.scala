@@ -158,21 +158,20 @@ object ChangesTrial {
 
   import Document._
 
-  type FlatDoc = List[(String, Document)]
+  type FlatDoc = List[(List[Int], Document)]
 
-  private def makeFlat(id: String, d: Document): FlatDoc = d match {
+  private def makeFlat(id: List[Int], d: Document): FlatDoc = d match {
     case t: Text => List(id -> t)
     case el: Element  =>
       (id, el.copy(xs = Nil)) :: {
         el.xs.toList.zipWithIndex flatMap { case (child, i) =>
-          makeFlat(s"${id}_${i + 1}", child)
+          makeFlat(id :+ (i + 1), child)
         }
       }
   }
 
   private def makeUnflat(flatDoc: FlatDoc) = {
-    val parsed = flatDoc.map { case (id, doc) => id.split('_').toList.map(_.toInt) -> doc }
-    val (1 :: Nil, root) :: children = parsed.sortBy(_._1.toIterable)
+    val (1 :: Nil, root) :: children = flatDoc.sortBy(_._1.toIterable)
     def findChildren(id: List[Int]): List[Document] = {
       def checkId(childId: List[Int]) =
         childId.length == (id.length + 1) && childId.startsWith(id)
@@ -188,21 +187,21 @@ object ChangesTrial {
   }
 
   sealed trait Intent {
-    def id: String
+    def id: List[Int]
   }
 
   object Intent {
 
-    case class SetAttr(id: String, attr: String, value: String) extends Intent
-    case class RemoveAttr(id: String, attr: String) extends Intent
-    case class Append(id: String, doc: Document) extends Intent
-    case class Delete(id: String) extends Intent
-    case class Replace(id: String, doc: Document) extends Intent
+    case class SetAttr(id: List[Int], attr: String, value: String) extends Intent
+    case class RemoveAttr(id: List[Int], attr: String) extends Intent
+    case class Append(id: List[Int], doc: Document) extends Intent
+    case class Delete(id: List[Int]) extends Intent
+    case class Replace(id: List[Int], doc: Document) extends Intent
 
-    def genSetAttrIntent(id: String): Gen[SetAttr] = Document.genAttr map { case (attr, value) => SetAttr(id, attr, value) }
-    def genRemoveAttrIntent(id: String): Gen[RemoveAttr] = Document.genAttr map { case (attr, _) => RemoveAttr(id, attr) }
-    def genAppendIntent(id: String): Gen[Append] = Document.genDocument map { doc => Append(id, doc) }
-    def genReplaceIntent(id: String): Gen[Replace] = Document.genDocument map { doc => Replace(id, doc) }
+    def genSetAttrIntent(id: List[Int]): Gen[SetAttr] = Document.genAttr map { case (attr, value) => SetAttr(id, attr, value) }
+    def genRemoveAttrIntent(id: List[Int]): Gen[RemoveAttr] = Document.genAttr map { case (attr, _) => RemoveAttr(id, attr) }
+    def genAppendIntent(id: List[Int]): Gen[Append] = Document.genDocument map { doc => Append(id, doc) }
+    def genReplaceIntent(id: List[Int]): Gen[Replace] = Document.genDocument map { doc => Replace(id, doc) }
 
     def genIntents(flatDoc: FlatDoc): Gen[Seq[Intent]] = {
       for {
@@ -233,20 +232,17 @@ object ChangesTrial {
       } yield {
         import collection.JavaConverters._
         val xs = intents.asScala
-        val xx = xs.sortBy(_.id.split('_').toIterable.map(_.toInt)).foldLeft(List.empty[Intent]) {
-          case (acc, intent) if !acc.exists(x => x.id.startsWith(intent.id)) =>
+        xs.sortBy(_.id.toIterable).foldLeft(List.empty[Intent]) {
+          case (acc, intent) if !acc.exists(x => intent.id.startsWith(x.id)) =>
             intent :: acc
           case (acc, _) => acc
         }
-//        println(xx.map(i => s"${i.id}, ${i.getClass.getName}").mkString("\n"))
-//        println("__")
-        xx
       }
     }
   }
 
   val genChangesTrial = {
-    def flatDocToChanges(doc: (String, Document)) = doc match {
+    def flatDocToChanges(doc: (List[Int], Document)) = doc match {
       case (id, Text(value)) => List(Change.createText(id, value))
       case (id, Element(name, attrs, _)) =>
         Change.create(id, name) :: attrs.toList.map {
@@ -255,7 +251,7 @@ object ChangesTrial {
     }
     for {
       originalDocument <- genDocument
-      flatDocument = makeFlat("1", originalDocument)
+      flatDocument = makeFlat(List(1), originalDocument)
       intents <- Intent.genIntents(flatDocument)
     } yield {
       val changes = {

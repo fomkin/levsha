@@ -8,10 +8,12 @@ import scala.collection.mutable
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
 sealed trait Change {
-  def id: String
+  def id: List[Int]
 }
 
 object Change {
+
+  implicit def parseId(s: String): List[Int] = s.split('_').toList.map(_.toInt)
 
   final class DiffTestChangesPerformer extends ChangesPerformer {
     private val buffer = mutable.Buffer.empty[Change]
@@ -28,17 +30,16 @@ object Change {
     def result: Seq[Change] = buffer
   }
 
-  case class removeAttr(id: String, name: String) extends Change
-  case class remove(id: String) extends Change
-  case class setAttr(id: String, name: String, value: String) extends Change
-  case class createText(id: String, text: String) extends Change
-  case class create(id: String, tag: String) extends Change
+  case class removeAttr(id: List[Int], name: String) extends Change
+  case class remove(id: List[Int]) extends Change
+  case class setAttr(id: List[Int], name: String, value: String) extends Change
+  case class createText(id: List[Int], text: String) extends Change
+  case class create(id: List[Int], tag: String) extends Change
 
   implicit val ordering = new Ordering[Change] {
     private val iterableIntOrdering = implicitly[Ordering[Iterable[Int]]]
-    private def toIterable(x: Change) = x.id.split('_').toIterable.map(_.toInt)
     def compare(x: Change, y: Change): Int = {
-      iterableIntOrdering.compare(toIterable(x), toIterable(y))
+      iterableIntOrdering.compare(x.id, y.id)
     }
   }
 }
