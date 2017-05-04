@@ -33,4 +33,12 @@ object Change {
   case class setAttr(id: String, name: String, value: String) extends Change
   case class createText(id: String, text: String) extends Change
   case class create(id: String, tag: String) extends Change
+
+  implicit val ordering = new Ordering[Change] {
+    private val iterableIntOrdering = implicitly[Ordering[Iterable[Int]]]
+    private def toIterable(x: Change) = x.id.split('_').toIterable.map(_.toInt)
+    def compare(x: Change, y: Change): Int = {
+      iterableIntOrdering.compare(toIterable(x), toIterable(y))
+    }
+  }
 }

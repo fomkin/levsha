@@ -6,6 +6,8 @@ scalaVersion := "2.11.8" // Need by IntelliJ
 
 organization := "com.github.fomkin"
 
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
+
 libraryDependencies ++= Seq(
   // Macro compat
   "org.typelevel" %% "macro-compat" % "1.1.1",

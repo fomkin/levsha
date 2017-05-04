@@ -33,6 +33,14 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
     }
 
+    "should remove attribute" - {
+      val changes = runDiff(
+        original = { implicit rc => 'span('class /= "world",'style /= "margin: 10;", "q") },
+        updated = { implicit rc =>'span('style /= "margin: 10;", "q") }
+      )
+      assert(changes == Seq(removeAttr("1", "class")))
+    }
+
   }
 
   // -----------------------

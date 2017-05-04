@@ -2,9 +2,8 @@ package levsha
 
 import levsha.Change.DiffTestChangesPerformer
 import levsha.impl.DiffRenderContext
-import levsha.impl.DiffRenderContext.{ChangesPerformer, DummyChangesPerformer}
-import org.scalacheck.{Gen, Properties}
-import org.scalacheck._
+import levsha.impl.DiffRenderContext.DummyChangesPerformer
+import org.scalacheck.{Gen, Properties, _}
 
 import scala.collection.mutable
 
@@ -40,8 +39,11 @@ object DiffProperties extends Properties("Diff") {
       trial.originalDocument(rcFirst)
       trial.newDocument(rcSecond)
       rcSecond.diff(rcFirst, performer)
-      println(s"performer.result = ${performer.result.mkString(", ")}")
-      performer.result == trial.changes
+      //println(s"performer.result = ${performer.result.mkString(", ")}")
+      val sample = trial.changes.sorted
+      val res = performer.result.sorted
+      assert(sample == res, s"Invalid change set:\n  ${res.mkString("\n  ")}")
+      true
     }
   }
 
@@ -59,12 +61,29 @@ sealed trait Document {
       xs.foreach(x => x(rc))
       rc.closeNode(name)
   }
+  override def toString: String = {
+    Document.docToString("", this)
+  }
 }
 
 object Document {
 
   case class Text(value: String) extends Document
   case class Element(name: String, attrs: Map[String, String], xs: Seq[Document]) extends Document
+
+  def docToString(level: String, doc: Document): String = {
+    def attrsToString(attrs: Map[String, String]) = attrs
+      .map { case (name, value) => s"""'$name /= "$value"""" }
+      .mkString(",")
+    doc match {
+      case Document.Text(value) => s"""$level"$value""""
+      case Document.Element(name, attrs, Nil) =>
+        s"$level'$name(${attrsToString(attrs)})"
+      case Document.Element(name, attrs, xs) =>
+        val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
+        s"$level'$name(${attrsToString(attrs)},\n$children\n$level)"
+    }
+  }
 
   val genAttr = {
     Gen.frequency(
@@ -120,21 +139,8 @@ case class ChangesTrial(
   newDocument: Document,
   changes: Seq[Change]
 ) {
+  import Document._
   override def toString: String = {
-    def attrsToString(attrs: Map[String, String]) = attrs
-      .map { case (name, value) => s"""'$name /= "$value"""" }
-      .mkString(",")
-
-    def docToString(level: String, doc: Document): String = {
-      doc match {
-        case Document.Text(value) => s"""$level"$value""""
-        case Document.Element(name, attrs, Nil) =>
-          s"$level'$name(${attrsToString(attrs)})"
-        case Document.Element(name, attrs, xs) =>
-          val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
-          s"$level'$name(${attrsToString(attrs)},\n$children\n$level)"
-      }
-    }
     s"""Changes Trial
        |-------------
        |Original Document:
@@ -263,7 +269,7 @@ object ChangesTrial {
       val updatedFlatDocument = changes.foldLeft(flatDocument.toMap) {
         case (acc, Change.create(id, name)) => acc + (id -> Element(name, Map.empty, Nil))
         case (acc, Change.createText(id, text)) => acc + (id -> Text(text))
-        case (acc, Change.remove(id)) => acc - id
+        case (acc, Change.remove(id)) => acc.filter(_._1.startsWith(id))
         case (acc, Change.removeAttr(id, attr)) if acc.contains(id) => acc(id) match {
           case _: Text => acc
           case el: Element =>
