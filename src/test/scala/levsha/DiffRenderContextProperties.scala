@@ -40,7 +40,7 @@ object DiffProperties extends Properties("Diff") {
       trial.originalDocument(rcFirst)
       trial.newDocument(rcSecond)
       rcSecond.diff(rcFirst, performer)
-      println(performer.result)
+      println(s"performer.result = ${performer.result.mkString(", ")}")
       performer.result == trial.changes
     }
   }
@@ -115,43 +115,6 @@ object Document {
   }
 }
 
-sealed trait Change {
-  def id: String
-}
-
-object Change {
-
-  final class DiffTestChangesPerformer extends ChangesPerformer {
-    private val buffer = mutable.Buffer.empty[Change]
-    def removeAttr(id: String, name: String): Unit =
-      buffer += Change.removeAttr(id, name)
-    def remove(id: String): Unit =
-      buffer += Change.remove(id)
-    def setAttr(id: String, name: String, value: String): Unit =
-      buffer += Change.setAttr(id, name, value)
-    def createText(id: String, text: String): Unit =
-      buffer += Change.createText(id, text)
-    def create(id: String, tag: String): Unit =
-      buffer += Change.create(id, tag)
-    def result: Seq[Change] = buffer
-  }
-
-  case class removeAttr(id: String, name: String) extends Change
-  case class remove(id: String) extends Change
-  case class setAttr(id: String, name: String, value: String) extends Change
-  case class createText(id: String, text: String) extends Change
-  case class create(id: String, tag: String) extends Change
-
-//  def transformDocument(document: Document, changeSet: Seq[Change]): Document = {
-//    import Document._
-//    val changeMap = changeSet.map(x => x.id -> x).toMap
-//    def aux(id: String, acc: List[String], document: Document): Document = (document, changeMap.get(id)) match {
-//      case (_: Element, Some(Change.create(_, tag))) if !acc.contains(id) =>
-//        aux(id, id :: acc, Element(tag, Map.empty, Nil))
-//    }
-//  }
-}
-
 case class ChangesTrial(
   originalDocument: Document,
   newDocument: Document,
@@ -159,17 +122,17 @@ case class ChangesTrial(
 ) {
   override def toString: String = {
     def attrsToString(attrs: Map[String, String]) = attrs
-      .map { case (name, value) => s"""$name="$value"""" }
-      .mkString(" ")
+      .map { case (name, value) => s"""'$name /= "$value"""" }
+      .mkString(",")
 
     def docToString(level: String, doc: Document): String = {
       doc match {
-        case Document.Text(value) => s"$level'$value'\n"
+        case Document.Text(value) => s"""$level"$value""""
         case Document.Element(name, attrs, Nil) =>
-          s"$level<$name ${attrsToString(attrs)} />\n"
+          s"$level'$name(${attrsToString(attrs)})"
         case Document.Element(name, attrs, xs) =>
-          val children = xs.map(docToString(level + "  ", _)).mkString
-          s"$level<$name ${attrsToString(attrs)}>\n$children$level</$name>\n"
+          val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
+          s"$level'$name(${attrsToString(attrs)},\n$children\n$level)"
       }
     }
     s"""Changes Trial
@@ -197,7 +160,7 @@ object ChangesTrial {
     case el: Element  =>
       (id, el.copy(xs = Nil)) :: {
         el.xs.toList.zipWithIndex flatMap { case (child, i) =>
-          makeFlat(s"${id}_$i", child)
+          makeFlat(s"${id}_${i + 1}", child)
         }
       }
   }
@@ -205,9 +168,14 @@ object ChangesTrial {
   private def makeUnflat(flatDoc: FlatDoc) = {
     val parsed = flatDoc.map { case (id, doc) => id.split('_').toList.map(_.toInt) -> doc }
     val (1 :: Nil, root) :: children = parsed.sortBy(_._1.toIterable)
-    def findChildren(id: List[Int]): List[Document] = children collect {
-      case (childId, e: Element) if childId.length == id.length + 1 && childId.startsWith(id) =>
-        e.copy(xs = findChildren(childId))
+    def findChildren(id: List[Int]): List[Document] = {
+      def checkId(childId: List[Int]) =
+        childId.length == id.length + 1 &&
+        childId.startsWith(id)
+      children collect {
+        case (childId, t: Text) if checkId(childId) => t
+        case (childId, e: Element) if checkId(childId) => e.copy(xs = findChildren(childId))
+      }
     }
     root match {
       case _: Text => root
