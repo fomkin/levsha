@@ -39,10 +39,12 @@ object DiffProperties extends Properties("Diff") {
       trial.originalDocument(rcFirst)
       trial.newDocument(rcSecond)
       rcSecond.diff(rcFirst, performer)
-      //println(s"performer.result = ${performer.result.mkString(", ")}")
       val sample = trial.changes.sorted
       val res = performer.result.sorted
-      assert(sample == res, s"Invalid change set:\n  ${res.mkString("\n  ")}")
+      assert(sample == res, {
+        s"\nShould be:\n  ${sample.mkString("\n  ")}"+
+        s"\nBut:\n  ${res.mkString("\n  ")}"
+      })
       true
     }
   }
@@ -148,9 +150,6 @@ case class ChangesTrial(
        |
        |New Document:
        |${docToString("  ", newDocument)}
-       |
-       |Changes:
-       |${changes.mkString("\n")}
      """.stripMargin
   }
 }
@@ -176,8 +175,7 @@ object ChangesTrial {
     val (1 :: Nil, root) :: children = parsed.sortBy(_._1.toIterable)
     def findChildren(id: List[Int]): List[Document] = {
       def checkId(childId: List[Int]) =
-        childId.length == id.length + 1 &&
-        childId.startsWith(id)
+        childId.length == (id.length + 1) && childId.startsWith(id)
       children collect {
         case (childId, t: Text) if checkId(childId) => t
         case (childId, e: Element) if checkId(childId) => e.copy(xs = findChildren(childId))
@@ -235,11 +233,14 @@ object ChangesTrial {
       } yield {
         import collection.JavaConverters._
         val xs = intents.asScala
-        xs.foldLeft(List.empty[Intent]) {
+        val xx = xs.sortBy(_.id.split('_').toIterable.map(_.toInt)).foldLeft(List.empty[Intent]) {
           case (acc, intent) if !acc.exists(x => x.id.startsWith(intent.id)) =>
             intent :: acc
           case (acc, _) => acc
         }
+//        println(xx.map(i => s"${i.id}, ${i.getClass.getName}").mkString("\n"))
+//        println("__")
+        xx
       }
     }
   }
@@ -257,19 +258,31 @@ object ChangesTrial {
       flatDocument = makeFlat("1", originalDocument)
       intents <- Intent.genIntents(flatDocument)
     } yield {
-      val changes = intents flatMap {
-        case Intent.Replace(id, doc) => makeFlat(id, doc).flatMap(flatDocToChanges)
-        case Intent.Append(id, doc) =>
-          // TODO
-          List() //makeFlat(id, doc).flatMap(flatDocToChanges)
-        case Intent.Delete(id) => List(Change.remove(id))
-        case Intent.SetAttr(id, attr, value) => List(Change.setAttr(id, attr, value))
-        case Intent.RemoveAttr(id, attr) => List(Change.removeAttr(id, attr))
+      val changes = {
+       val xs: Seq[Change] = intents.flatMap {
+          case Intent.Replace(id, doc) => makeFlat(id, doc).flatMap(flatDocToChanges)
+          case Intent.Append(id, doc) =>
+            // TODO
+            Seq() //makeFlat(id, doc).flatMap(flatDocToChanges)
+          case Intent.Delete(id) => Seq(Change.remove(id))
+          case Intent.SetAttr(id, attr, value) => Seq(Change.setAttr(id, attr, value))
+          case Intent.RemoveAttr(id, attr) => Seq(Change.removeAttr(id, attr))
+        }
+        xs.sorted
       }
+
       val updatedFlatDocument = changes.foldLeft(flatDocument.toMap) {
-        case (acc, Change.create(id, name)) => acc + (id -> Element(name, Map.empty, Nil))
-        case (acc, Change.createText(id, text)) => acc + (id -> Text(text))
-        case (acc, Change.remove(id)) => acc.filter(_._1.startsWith(id))
+        case (acc, Change.create(id, name)) =>
+          acc.get(id)
+            .fold(acc) {
+              case Element(`name`, _, _) => acc
+              case _ => acc.filter(!_._1.startsWith(id))
+            }
+            .updated(id, Element(name, Map.empty, Nil))
+        case (acc, Change.createText(id, text)) => acc
+          .filter(!_._1.startsWith(id))
+          .updated(id, Text(text))
+        case (acc, Change.remove(id)) => acc.filter(!_._1.startsWith(id))
         case (acc, Change.removeAttr(id, attr)) if acc.contains(id) => acc(id) match {
           case _: Text => acc
           case el: Element =>

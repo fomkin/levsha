@@ -33,6 +33,52 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
     }
 
+    "should text to node with chidlren" - {
+      val changes = runDiff(
+        original = { implicit rc =>
+          'div('class /= "world",
+            'input('class /= "world",'lang /= "ru",
+              "j"
+            ),
+            'p('class /= "world",'lang /= "ru"),
+            "I",
+            "j",
+            "b",
+            "V",
+            "A",
+            "d",
+            "d",
+            "o",
+            'p('class /= "world")
+          )
+        },
+        updated = { implicit rc =>
+          'div('class /= "world",
+            'input('class /= "world",'lang /= "ru",
+              "j"
+            ),
+            'p('class /= "world",'lang /= "ru"),
+            "I",
+            'div('lang /= "ru"),
+            "b",
+            'span(),
+            "A",
+            "d",
+            "d",
+            "o",
+            'p('class /= "world")
+          )
+        }
+      )
+      assert {
+        changes == Seq(
+          create("1_4","div"),
+          setAttr("1_4","lang","ru"),
+          create("1_6","span")
+        )
+      }
+    }
+
     "should remove attribute" - {
       val changes = runDiff(
         original = { implicit rc => 'span('class /= "world",'style /= "margin: 10;", "q") },
@@ -40,7 +86,6 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
       assert(changes == Seq(removeAttr("1", "class")))
     }
-
   }
 
   // -----------------------

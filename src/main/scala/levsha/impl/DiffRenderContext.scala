@@ -280,6 +280,7 @@ final class DiffRenderContext[MiscType](
         performer.create(counter.currentString, identIndex(tagA))
         counter.incLevel()
         createLoop(a)
+        counter.decLevel()
       } else if (opA == CLOSE && opB == CLOSE) {
         counter.decLevel()
 //      } else if (opA == ATTR && opB == ATTR) {
