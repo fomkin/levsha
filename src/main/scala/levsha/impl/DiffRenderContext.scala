@@ -143,15 +143,18 @@ final class DiffRenderContext[M](
           createLoop(a, performer)
           counter.decLevel()
         } else {
-          compareAttrs(a, b, performer)
+          compareAttrs(performer)
           counter.incLevel()
         }
       } else if (opA == TEXT && opB == TEXT) {
-        val textA = readText(a)
-        val textB = readText(b)
         counter.incId()
-        if (textA != textB) {
+        if (!compareTexts()) {
+          skipText(b)
+          val textA = readText(a)
           performer.createText(counter.currentString, textA)
+        } else {
+          skipText(a)
+          skipText(b)
         }
       } else if (opA == TEXT && opB == OPEN) {
         val aText = readText(a)
@@ -304,7 +307,7 @@ final class DiffRenderContext[M](
   }
 
   /* O(n^2) */
-  private def compareAttrs(a: ByteBuffer, b: ByteBuffer, performer: ChangesPerformer): Unit = {
+  private def compareAttrs(performer: ChangesPerformer): Unit = {
     val startPosA = a.position()
     val startPosB = b.position()
     // Check the attrs were removed
@@ -342,6 +345,29 @@ final class DiffRenderContext[M](
       }
     }
     b.position(endPosB)
+  }
+
+  private def compareTexts(): Boolean = {
+    val startPosA = a.position()
+    val startPosB = b.position()
+    val aLen = a.getShort()
+    val bLen = b.getShort()
+    if (aLen != bLen) {
+      a.position(startPosA)
+      b.position(startPosB)
+      false
+    } else {
+      var i = 0
+      var equals = true
+      while (equals && i < aLen) {
+        if (a.get() != b.get())
+          equals = false
+        i += 1
+      }
+      a.position(startPosA)
+      b.position(startPosB)
+      equals
+    }
   }
 }
 
