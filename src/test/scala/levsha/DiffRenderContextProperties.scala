@@ -21,8 +21,8 @@ object DiffProperties extends Properties("Diff") {
       case (a, b) =>
         val index = mutable.Map.empty[Int, String]
         val dummyPerformer = new DummyChangesPerformer()
-        val rcFirst = new DiffRenderContext[Nothing](identIndex = index)
-        val rcSecond = new DiffRenderContext[Nothing](identIndex = index)
+        val rcFirst = DiffRenderContext[Nothing](identIndex = index)
+        val rcSecond = DiffRenderContext[Nothing](identIndex = index)
         a(rcFirst)
         b(rcSecond)
         rcSecond.diff(rcFirst, dummyPerformer)
@@ -34,8 +34,8 @@ object DiffProperties extends Properties("Diff") {
     Prop.forAll(ChangesTrial.genChangesTrial) { trial =>
       val index = mutable.Map.empty[Int, String]
       val performer = new DiffTestChangesPerformer()
-      val rcFirst = new DiffRenderContext[Nothing](identIndex = index)
-      val rcSecond = new DiffRenderContext[Nothing](identIndex = index)
+      val rcFirst = DiffRenderContext[Nothing](identIndex = index)
+      val rcSecond = DiffRenderContext[Nothing](identIndex = index)
       trial.originalDocument(rcFirst)
       trial.newDocument(rcSecond)
       rcSecond.diff(rcFirst, performer)

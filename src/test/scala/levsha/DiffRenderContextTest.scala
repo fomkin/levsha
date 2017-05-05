@@ -129,8 +129,8 @@ object DiffRenderContextTest extends utest.TestSuite {
   def runDiff(original: RenderContext[Nothing] => RenderUnit, updated: RenderContext[Nothing] => RenderUnit): Seq[Change] = {
     val identIndex = mutable.Map.empty[Int, String]
     val performer = new DiffTestChangesPerformer()
-    val rc1 = new DiffRenderContext[Nothing](identIndex = identIndex)
-    val rc2 = new DiffRenderContext[Nothing](identIndex = identIndex)
+    val rc1 = DiffRenderContext[Nothing](identIndex = identIndex)
+    val rc2 = DiffRenderContext[Nothing](identIndex = identIndex)
     original(rc1)
     updated(rc2)
     rc2.diff(rc1, performer)
