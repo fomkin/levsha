@@ -92,9 +92,15 @@ object Document {
     Gen.frequency(
       (5, "class" -> "hello"),
       (7, "class" -> "world"),
+      (7, "class" -> "cow"),
+      (7, "class" -> "lol"),
       (1, "name" -> "cow"),
+      (1, "name" -> "I"),
+      (1, "name" -> "am"),
+      (1, "name" -> "Korolev"),
       (2, "lang" -> "ru"),
       (2, "lang" -> "ru"),
+      (3, "lang" -> "en"),
       (1, "style" -> "margin: 10;"),
       (1, "style" -> "padding: 10;")
     )
@@ -112,7 +118,10 @@ object Document {
       (4, "span"),
       (1, "p"),
       (1, "input"),
-      (1, "button")
+      (1, "button"),
+      (1, "ul"),
+      (1, "li"),
+      (1, "form")
     )
   }
 
@@ -133,7 +142,10 @@ object Document {
   }
 
   def genDocument: Gen[Document] = Gen.lzy {
-    Gen.oneOf(genText, genElement)
+    Gen.frequency(
+      2 -> genText,
+      5 -> genElement
+    )
   }
 }
 
@@ -267,15 +279,13 @@ object ChangesTrial {
         val xs: Seq[Change] = intents.flatMap {
           case Intent.Replace(id, doc) => makeFlat(id, doc).flatMap(flatDocToChanges)
           case Intent.Append(id, doc) =>
-//            val nextId = flatDocument
-//              .filter { case (i, _) => i.length == id.length + 1 && i.startsWith(id) }
-//              .sortBy(_._1.toIterable)
-//              .lastOption
-//              .map(_._1.last + 1)
-//              .getOrElse(1)
-//            println(doc)
-//            makeFlat(id :+ nextId, doc).flatMap(flatDocToChanges)
-            Seq()
+            val nextId = flatDocument
+              .filter { case (i, _) => i.length == id.length + 1 && i.startsWith(id) }
+              .sortBy(_._1.toIterable)
+              .lastOption
+              .map(_._1.last + 1)
+              .getOrElse(1)
+            makeFlat(id :+ nextId, doc).flatMap(flatDocToChanges)
           case Intent.Delete(id) =>
             val parent = id.dropRight(1)
             val thisIndex = id.last
