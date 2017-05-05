@@ -87,6 +87,41 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
       assert(changes == Seq(removeAttr("1", "class")))
     }
+    
+    "should remove only subroot, not entire tree" - {
+      val changes = runDiff(
+        original = { implicit rc =>
+          'div('class /= "world",
+            'div('class /= "world"),
+            'div('class /= "hello",
+              'span('name /= "cow",'class /= "hello",
+                'span()
+              ),
+              'div('class /= "world",'style /= "margin: 10;")
+            ),
+            'button('class /= "world",
+              'span('style /= "margin: 10;",'class /= "hello"),
+              'span(),
+              'div('lang /= "ru",'name /= "cow")
+            ),
+            "dasd"
+          )
+        },
+        updated = { implicit rc =>
+          'div('class /= "world",
+            'div('class /= "world"),
+            "gGi"
+          )
+        }
+      )
+      assert {
+        changes == Seq(
+          createText(List(1, 2), "gGi"),
+          remove(List(1, 3)),
+          remove(List(1, 4))
+        )
+      }
+    }
   }
 
   // -----------------------

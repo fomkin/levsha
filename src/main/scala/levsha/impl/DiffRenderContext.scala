@@ -179,26 +179,19 @@ final class DiffRenderContext[MiscType](
     }
 
     def deleteLoop(x: ByteBuffer) = {
-      val startLevel = counter.getLevel
       var continue = true
       while (continue) {
         (op(x): @switch) match {
-          case CLOSE =>
-            if (counter.getLevel == startLevel) continue = false
-            else counter.decLevel()
-          case ATTR =>
-            // node will be removed so we don't need to remove the attr
-            skipAttr(x)
+          case OPEN =>
+            x.getInt() // skip tag
+            counter.incId()
+            performer.remove(counter.currentString)
+            skipLoop(x)
           case TEXT =>
             skipText(x)
             counter.incId()
             performer.remove(counter.currentString)
-          case OPEN =>
-            x.getInt() // skip int
-            counter.incId()
-            performer.remove(counter.currentString)
-            counter.incLevel()
-          case LAST_ATTR => // do nothing
+          case CLOSE | END => continue = false
         }
       }
     }
@@ -283,28 +276,10 @@ final class DiffRenderContext[MiscType](
         counter.decLevel()
       } else if (opA == CLOSE && opB == CLOSE) {
         counter.decLevel()
-//      } else if (opA == ATTR && opB == ATTR) {
-//        val attrA = readAttr(a)
-//        if (attrA != readAttr(b)) {
-//          counter.decLevelTmp()
-//          performer.setAttr(counter.currentString, attrA, readAttrText(a))
-//          readAttrText(b) // skip attr text
-//          counter.incLevel()
-//        }
-//      } else if (opA == ATTR && opB != ATTR) {
-//        unOp(b)
-//        counter.decLevelTmp()
-//        performer.setAttr(counter.currentString, readAttr(a), readAttrText(a))
-//        counter.incLevel()
-//      } else if (opA != ATTR && opB == ATTR) {
-//        unOp(a)
-//        counter.decLevelTmp()
-//        performer.removeAttr(counter.currentString, readAttr(b))
-//        skipAttrText(b)
-//        counter.incLevel()
       } else if ((opA == CLOSE || opA == END) && opB != CLOSE && opB != END) {
         unOp(b)
         deleteLoop(b)
+        counter.decLevel()
       } else if (opA != CLOSE && opA != END && (opB == CLOSE || opB == END)) {
         unOp(a)
         createLoop(a)
