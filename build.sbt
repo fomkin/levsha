@@ -10,7 +10,7 @@ organization := "com.github.fomkin"
 
 libraryDependencies ++= Seq(
   // Macro compat
-  "org.typelevel" %% "macro-compat" % "1.1.1",
+  "org.typelevel" %% "macro-compat" % "1.1.1" % "provided",
   "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // Test

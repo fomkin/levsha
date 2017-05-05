@@ -70,7 +70,7 @@ final class DiffRenderContext[M](
     attrsOpened = true
     counter.incId()
     counter.incLevel()
-    a.put(OPEN.toByte)
+    a.put(OpOpen.toByte)
     a.putInt(name.hashCode)
     idents.update(name.hashCode, name)
   }
@@ -79,14 +79,14 @@ final class DiffRenderContext[M](
   def closeNode(name: String): Node.type = {
     closeAttrs()
     counter.decLevel()
-    a.put(CLOSE.toByte)
+    a.put(OpClose.toByte)
     Node
   }
 
   /** @inheritdoc */
   def setAttr(name: String, value: String): Attr.type = {
     idents.update(name.hashCode, name)
-    a.put(ATTR.toByte)
+    a.put(OpAttr.toByte)
     a.putInt(name.hashCode)
     a.putShort(value.length.toShort)
     a.put(value.getBytes(StandardCharsets.UTF_8))
@@ -97,7 +97,7 @@ final class DiffRenderContext[M](
   def addTextNode(text: String): Text.type = {
     closeAttrs()
     counter.incId()
-    a.put(TEXT.toByte)
+    a.put(OpText.toByte)
     a.putShort(text.length.toShort)
     a.put(text.getBytes(StandardCharsets.UTF_8))
     Text
@@ -133,7 +133,7 @@ final class DiffRenderContext[M](
     while (a.hasRemaining) {
       val opA = op(a)
       val opB = op(b)
-      if (opA == OPEN && opB == OPEN) {
+      if (opA == OpOpen && opB == OpOpen) {
         counter.incId()
         val tagA = readTag(a)
         if (tagA != readTag(b)) {
@@ -146,7 +146,7 @@ final class DiffRenderContext[M](
           compareAttrs(performer)
           counter.incLevel()
         }
-      } else if (opA == TEXT && opB == TEXT) {
+      } else if (opA == OpText && opB == OpText) {
         counter.incId()
         if (!compareTexts()) {
           skipText(b)
@@ -156,13 +156,13 @@ final class DiffRenderContext[M](
           skipText(a)
           skipText(b)
         }
-      } else if (opA == TEXT && opB == OPEN) {
+      } else if (opA == OpText && opB == OpOpen) {
         val aText = readText(a)
         readTag(b) // skip tag b
         counter.incId()
         performer.createText(counter.currentString, aText)
         skipLoop(b)
-      } else if (opA == OPEN && opB == TEXT) {
+      } else if (opA == OpOpen && opB == OpText) {
         val tagA = readTag(a)
         counter.incId()
         skipText(b)
@@ -170,13 +170,13 @@ final class DiffRenderContext[M](
         counter.incLevel()
         createLoop(a, performer)
         counter.decLevel()
-      } else if (opA == CLOSE && opB == CLOSE) {
+      } else if (opA == OpClose && opB == OpClose) {
         counter.decLevel()
-      } else if ((opA == CLOSE || opA == END) && opB != CLOSE && opB != END) {
+      } else if ((opA == OpClose || opA == OpEnd) && opB != OpClose && opB != OpEnd) {
         unOp(b)
         deleteLoop(b, performer)
         counter.decLevel()
-      } else if (opA != CLOSE && opA != END && (opB == CLOSE || opB == END)) {
+      } else if (opA != OpClose && opA != OpEnd && (opB == OpClose || opB == OpEnd)) {
         unOp(a)
         createLoop(a, performer)
         counter.decLevel()
@@ -187,13 +187,13 @@ final class DiffRenderContext[M](
   private def closeAttrs(): Unit = {
     if (attrsOpened) {
       attrsOpened = false
-      a.put(LAST_ATTR.toByte)
+      a.put(OpLastAttr.toByte)
     }
   }
 
   private def op(x: ByteBuffer): Byte = {
     if (x.hasRemaining) x.get()
-    else END.toByte
+    else OpEnd.toByte
   }
 
   private def readTag(x: ByteBuffer): Int = {
@@ -207,6 +207,10 @@ final class DiffRenderContext[M](
 
   private def readText(x: ByteBuffer): String = {
     val len = x.getShort()
+    readText(x, len)
+  }
+
+  private def readText(x: ByteBuffer, len: Int): String = {
     val bytes = new Array[Byte](len)
     x.get(bytes)
     new String(bytes, StandardCharsets.UTF_8)
@@ -225,8 +229,8 @@ final class DiffRenderContext[M](
   /** true is further is attr; false if end of list */
   private def checkAttr(x: ByteBuffer): Boolean = {
     (op(x): @switch) match {
-      case ATTR => true
-      case LAST_ATTR => false
+      case OpAttr => true
+      case OpLastAttr => false
     }
   }
 
@@ -236,6 +240,10 @@ final class DiffRenderContext[M](
 
   private def readAttr(x: ByteBuffer) = {
     idents(x.getInt())
+  }
+
+  private def readAttrText(x: ByteBuffer, len: Int) = {
+    readText(x, len)
   }
 
   private def readAttrText(x: ByteBuffer) = {
@@ -251,13 +259,13 @@ final class DiffRenderContext[M](
     var continue = true
     while (continue) {
       (op(x): @switch) match {
-        case CLOSE =>
+        case OpClose =>
           if (counter.getLevel == startLevel) continue = false
           else counter.decLevel()
-        case ATTR => skipAttr(x)
-        case LAST_ATTR => // do nothing
-        case TEXT => skipText(x)
-        case OPEN =>
+        case OpAttr => skipAttr(x)
+        case OpLastAttr => // do nothing
+        case OpText => skipText(x)
+        case OpOpen =>
           x.getInt() // skip tag
           counter.incLevel()
       }
@@ -269,21 +277,21 @@ final class DiffRenderContext[M](
     var continue = true
     while (continue) {
       (op(x): @switch) match {
-        case CLOSE =>
+        case OpClose =>
           if (counter.getLevel == startLevel) continue = false
           else counter.decLevel()
-        case ATTR =>
+        case OpAttr =>
           counter.decLevelTmp()
           performer.setAttr(counter.currentString, readAttr(x), readAttrText(x))
           counter.incLevel()
-        case TEXT =>
+        case OpText =>
           counter.incId()
           performer.createText(counter.currentString, readText(x))
-        case OPEN =>
+        case OpOpen =>
           counter.incId()
           performer.create(counter.currentString, idents(x.getInt()))
           counter.incLevel()
-        case LAST_ATTR => // do nothing
+        case OpLastAttr => // do nothing
       }
     }
   }
@@ -292,21 +300,22 @@ final class DiffRenderContext[M](
     var continue = true
     while (continue) {
       (op(x): @switch) match {
-        case OPEN =>
+        case OpOpen =>
           x.getInt() // skip tag
           counter.incId()
           performer.remove(counter.currentString)
           skipLoop(x)
-        case TEXT =>
+        case OpText =>
           skipText(x)
           counter.incId()
           performer.remove(counter.currentString)
-        case CLOSE | END => continue = false
+        case OpClose | OpEnd => continue = false
       }
     }
   }
 
-  /* O(n^2) */
+  /* O(n^2). but it doesn't matter.
+   most of nodes usually have just one or two attrs */
   private def compareAttrs(performer: ChangesPerformer): Unit = {
     val startPosA = a.position()
     val startPosB = b.position()
@@ -330,18 +339,36 @@ final class DiffRenderContext[M](
     val endPosB = b.position()
     a.position(startPosA)
     while (checkAttr(a)) {
-      val attrNameA = readAttrRaw(a)
-      val attrValueA = readAttrText(a)
+      val nameA = readAttrRaw(a)
+      val valueLenA = a.getShort()
+      val valuePosA = a.position()
       var needToSet = true
       b.position(startPosB)
       while (needToSet && checkAttr(b)) {
-        val attrNameB = readAttrRaw(b)
-        val attrValueB = readAttrText(b)
-        if (attrNameA == attrNameB && attrValueA == attrValueB)
-          needToSet = false
+        val nameB = readAttrRaw(b)
+        val valueLenB = b.getShort()
+        val valuePosB = b.position()
+        // First condition: name of attributes should be equals
+        if (nameA == nameB) {
+          if (valueLenA == valueLenB) {
+            var i = 0
+            var eq = true
+            a.position(valuePosA)
+            while (eq && i < valueLenA) {
+              if (a.get() != b.get()) eq = false
+              i += 1
+            }
+            if (eq) needToSet = false
+          }
+        }
+        b.position(valuePosB + valueLenB)
       }
       if (needToSet) {
-        performer.setAttr(counter.currentString, idents(attrNameA), attrValueA)
+        a.position(valuePosA)
+        val valueA = readAttrText(a, valueLenA)
+        performer.setAttr(counter.currentString, idents(nameA), valueA)
+      } else {
+        a.position(valuePosA + valueLenA)
       }
     }
     b.position(endPosB)
@@ -400,22 +427,13 @@ object DiffRenderContext {
   type MiscCallback[MiscType] = (String, MiscType) => Unit
 
   // Opcodes
-  final val OPEN = 1
-  final val CLOSE = 2
-  final val ATTR = 3
-  final val TEXT = 4
-  final val LAST_ATTR = 5
-  final val END = 6
-
-  def opLabel(op: Byte): String = (op: @switch) match {
-    case OPEN => "OPEN"
-    case CLOSE => "CLOSE"
-    case ATTR => "ATTR"
-    case TEXT => "TEXT"
-    case LAST_ATTR => "LAST_ATTR"
-    case END => "END"
-    case _ => "UNKNOWN"
-  }
+  // TODO Seems like final val doesn't work anymore
+  final val OpOpen = 1
+  final val OpClose = 2
+  final val OpAttr = 3
+  final val OpText = 4
+  final val OpLastAttr = 5
+  final val OpEnd = 6
 
   object IdCounter {
     def apply(maxLevel: Int = 256): IdCounter =
@@ -425,44 +443,44 @@ object DiffRenderContext {
   final class IdCounter(maxLevel: Int) {
 
     private var level = 1
-    private val buff = ByteBuffer.allocate(maxLevel * 2)
+    private val buffer = ByteBuffer.allocate(maxLevel * 2)
 
     private def index = (level - 1) * 2
 
     // Initial limit
-    buff.limit(level * 2)
+    buffer.limit(level * 2)
 
     def incLevel(): Unit = {
       level += 1
-      buff.limit(level * 2)
+      buffer.limit(level * 2)
     }
 
     /** Just decreases level */
     def decLevelTmp(): Unit = {
       level -= 1
-      buff.limit(level * 2)
+      buffer.limit(level * 2)
     }
 
     /** Resets current id and decreases level */
     def decLevel(): Unit = {
-      buff.putShort(index, 0)
+      buffer.putShort(index, 0)
       level -= 1
-      buff.limit(level * 2)
+      buffer.limit(level * 2)
     }
 
     def incId(): Unit = {
-      val updated = buff.getShort(index) + 1
-      buff.putShort(index, updated.toShort)
+      val updated = buffer.getShort(index) + 1
+      buffer.putShort(index, updated.toShort)
     }
 
     def getLevel: Int = level
 
     def current: Array[Byte] = {
-      val clone = new Array[Byte](buff.limit)
-      buff.rewind()
+      val clone = new Array[Byte](buffer.limit)
+      buffer.rewind()
       var i = 0
-      while (buff.hasRemaining) {
-        clone(i) = buff.get()
+      while (buffer.hasRemaining) {
+        clone(i) = buffer.get()
         i += 1
       }
       clone
@@ -470,22 +488,22 @@ object DiffRenderContext {
 
     def currentString: String = {
       val builder = StringBuilder.newBuilder
-      buff.rewind()
-      while (buff.hasRemaining) {
-        builder.append(buff.getShort())
-        if (buff.hasRemaining)
+      buffer.rewind()
+      while (buffer.hasRemaining) {
+        builder.append(buffer.getShort())
+        if (buffer.hasRemaining)
           builder.append('_')
       }
       builder.mkString
     }
 
     def reset(): Unit = {
-      buff.clear()
-      while (buff.hasRemaining)
-        buff.putInt(0)
+      buffer.clear()
+      while (buffer.hasRemaining)
+        buffer.putInt(0)
       level = 1
-      buff.rewind()
-      buff.limit(level * 2)
+      buffer.rewind()
+      buffer.limit(level * 2)
     }
   }
 }
