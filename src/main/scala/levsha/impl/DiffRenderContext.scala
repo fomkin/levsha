@@ -8,7 +8,7 @@ import levsha.RenderUnit.{Attr, Misc, Node, Text}
 import levsha.impl.DiffRenderContext._
 
 import scala.annotation.switch
-import scala.collection.mutable
+import internal.debox.IntStringMap
 
 /*
 Structures
@@ -37,14 +37,12 @@ attr {
 
 */
 
-final class DiffRenderContext[M](
-  mc: MiscCallback[M],
-  bufferSize: Int,
-  idents: mutable.Map[Int, String]) extends RenderContext[M] {
+final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends RenderContext[M] {
 
   if ((bufferSize == 0) || ((bufferSize & (bufferSize - 1)) != 0))
     throw new IllegalArgumentException("bufferSize should be power of two")
 
+  private val idents = IntStringMap.ofSize(100)
   private val counter = IdCounter()
   private var attrsOpened = false
 
@@ -402,10 +400,9 @@ object DiffRenderContext {
 
   def apply[MiscType](
     onMisc: MiscCallback[MiscType] = (_: String, _: MiscType) => (),
-    bufferSize: Int = 1024 * 64,
-    identIndex: mutable.Map[Int, String] = mutable.Map.empty
+    bufferSize: Int = 1024 * 64
   ): DiffRenderContext[MiscType] = {
-    new DiffRenderContext[MiscType](onMisc, bufferSize, identIndex)
+    new DiffRenderContext[MiscType](onMisc, bufferSize)
   }
 
   trait ChangesPerformer {
@@ -427,7 +424,6 @@ object DiffRenderContext {
   type MiscCallback[MiscType] = (String, MiscType) => Unit
 
   // Opcodes
-  // TODO Seems like final val doesn't work anymore
   final val OpOpen = 1
   final val OpClose = 2
   final val OpAttr = 3
