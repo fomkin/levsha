@@ -5,8 +5,6 @@ import levsha.impl.DiffRenderContext
 import levsha.impl.DiffRenderContext.DummyChangesPerformer
 import org.scalacheck.{Gen, Properties, _}
 
-import scala.collection.mutable
-
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
@@ -19,31 +17,29 @@ object DiffProperties extends Properties("Diff") {
       yield (a, b)
     Prop.forAll(gen) {
       case (a, b) =>
-        val index = mutable.Map.empty[Int, String]
-        val dummyPerformer = new DummyChangesPerformer()
-        val rcFirst = DiffRenderContext[Nothing](identIndex = index)
-        val rcSecond = DiffRenderContext[Nothing](identIndex = index)
-        a(rcFirst)
-        b(rcSecond)
-        rcSecond.diff(rcFirst, dummyPerformer)
+        val performer = new DummyChangesPerformer()
+        val renderContext = DiffRenderContext[Nothing]()
+        a(renderContext)
+        renderContext.swap()
+        b(renderContext)
+        renderContext.diff(performer)
         true
     }
   }
 
   property("generate valid changes set") = {
     Prop.forAll(ChangesTrial.genChangesTrial) { trial =>
-      val index = mutable.Map.empty[Int, String]
       val performer = new DiffTestChangesPerformer()
-      val rcFirst = DiffRenderContext[Nothing](identIndex = index)
-      val rcSecond = DiffRenderContext[Nothing](identIndex = index)
-      trial.originalDocument(rcFirst)
-      trial.newDocument(rcSecond)
-      rcSecond.diff(rcFirst, performer)
+      val renderContext = DiffRenderContext[Nothing]()
+      trial.originalDocument(renderContext)
+      renderContext.swap()
+      trial.newDocument(renderContext)
+      renderContext.diff(performer)
       val sample = trial.changes.sorted
       val res = performer.result.sorted
       assert(sample == res, {
         s"\nShould be:\n  ${sample.mkString("\n  ")}" +
-          s"\nBut:\n  ${res.mkString("\n  ")}"
+        s"\nBut:\n  ${res.mkString("\n  ")}"
       })
       true
     }

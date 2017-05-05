@@ -1,6 +1,6 @@
 package levsha.impl
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
 import levsha.RenderContext
@@ -10,96 +10,124 @@ import levsha.impl.DiffRenderContext._
 import scala.annotation.switch
 import scala.collection.mutable
 
+/*
+Structures
+
+node {
+  byte OPEN
+  int tag_hash_code
+  attr attr_list[]
+  byte LAST_ATTR
+  node|text child[]
+  byte CLOSE
+}
+
+text {
+  byte TEXT
+  short length
+  byte value[length]
+}
+
+attr {
+  byte ATTR
+  int attr_name_hash_code
+  short length
+  byte value[length]
+}
+
+*/
+
 final class DiffRenderContext[M](
   mc: MiscCallback[M],
   bufferSize: Int,
-  private val idents: mutable.Map[Int, String]) extends RenderContext[M] {
+  idents: mutable.Map[Int, String]) extends RenderContext[M] {
 
-  /*
-  Structures
-
-  node {
-    byte OPEN
-    int tag_hash_code
-    attr attr_list[]
-    byte LAST_ATTR
-    node|text child[]
-    byte CLOSE
-  }
-
-  text {
-    byte TEXT
-    short length
-    byte value[length]
-  }
-
-  attr {
-    byte ATTR
-    int attr_name_hash_code
-    short length
-    byte value[length]
-  }
-
- */
+  if ((bufferSize == 0) || ((bufferSize & (bufferSize - 1)) != 0))
+    throw new IllegalArgumentException("bufferSize should be power of two")
 
   private val counter = IdCounter()
-  private val buffer = ByteBuffer.allocateDirect(bufferSize)
   private var attrsOpened = false
 
+  private val buffer = {
+    val buff = ByteBuffer.allocateDirect(bufferSize)
+    buff.order(ByteOrder.nativeOrder())
+  }
+
+  private var a = {
+    buffer.limit(bufferSize / 2)
+    buffer.slice().order(ByteOrder.nativeOrder())
+  }
+
+  private var b = {
+    buffer.position(bufferSize / 2)
+    buffer.limit(buffer.capacity)
+    buffer.slice().order(ByteOrder.nativeOrder())
+  }
+
+  /** @inheritdoc */
   def openNode(name: String): Unit = {
     closeAttrs()
     attrsOpened = true
     counter.incId()
     counter.incLevel()
-    buffer.put(OPEN.toByte)
-    buffer.putInt(name.hashCode)
+    a.put(OPEN.toByte)
+    a.putInt(name.hashCode)
     idents.update(name.hashCode, name)
   }
 
+  /** @inheritdoc */
   def closeNode(name: String): Node.type = {
     closeAttrs()
     counter.decLevel()
-    buffer.put(CLOSE.toByte)
+    a.put(CLOSE.toByte)
     Node
   }
 
+  /** @inheritdoc */
   def setAttr(name: String, value: String): Attr.type = {
     idents.update(name.hashCode, name)
-    buffer.put(ATTR.toByte)
-    buffer.putInt(name.hashCode)
-    buffer.putShort(value.length.toShort)
-    buffer.put(value.getBytes(StandardCharsets.UTF_8))
+    a.put(ATTR.toByte)
+    a.putInt(name.hashCode)
+    a.putShort(value.length.toShort)
+    a.put(value.getBytes(StandardCharsets.UTF_8))
     Attr
   }
 
+  /** @inheritdoc */
   def addTextNode(text: String): Text.type = {
     closeAttrs()
     counter.incId()
-    buffer.put(TEXT.toByte)
-    buffer.putShort(text.length.toShort)
-    buffer.put(text.getBytes(StandardCharsets.UTF_8))
+    a.put(TEXT.toByte)
+    a.putShort(text.length.toShort)
+    a.put(text.getBytes(StandardCharsets.UTF_8))
     Text
   }
 
+  /** @inheritdoc */
   def addMisc(misc: M): Misc = {
     mc(counter.currentString, misc)
     Misc
   }
 
-  private def closeAttrs(): Unit = {
-    if (attrsOpened) {
-      attrsOpened = false
-      buffer.put(LAST_ATTR.toByte)
-    }
+  /** Swap buffers */
+  def swap(): Unit = {
+    a.flip()
+    val t = b
+    b = a
+    a = t
+    reset()
   }
 
-  def diff(bContext: DiffRenderContext[M], performer: ChangesPerformer): Unit = {
+  /** Cleanup current buffer */
+  def reset(): Unit = {
+    a.position(0)
+    while (a.hasRemaining)
+      a.putInt(0)
+    a.clear()
+  }
 
-    val a = buffer
-    val b = bContext.buffer
-
+  def diff(performer: ChangesPerformer): Unit = {
     a.flip()
-    b.flip()
     counter.reset()
 
     while (a.hasRemaining) {
@@ -153,12 +181,21 @@ final class DiffRenderContext[M](
     }
   }
 
+  private def closeAttrs(): Unit = {
+    if (attrsOpened) {
+      attrsOpened = false
+      a.put(LAST_ATTR.toByte)
+    }
+  }
+
   private def op(x: ByteBuffer): Byte = {
     if (x.hasRemaining) x.get()
     else END.toByte
   }
 
-  private def readTag(x: ByteBuffer): Int = x.getInt()
+  private def readTag(x: ByteBuffer): Int = {
+    x.getInt()
+  }
 
   private def skipText(x: ByteBuffer): Unit = {
     val len = x.getShort()
@@ -178,7 +215,9 @@ final class DiffRenderContext[M](
     x.position(x.position + len)
   }
 
-  private def skipAttrText(x: ByteBuffer): Unit = skipText(x)
+  private def skipAttrText(x: ByteBuffer): Unit = {
+    skipText(x)
+  }
 
   /** true is further is attr; false if end of list */
   private def checkAttr(x: ByteBuffer): Boolean = {
@@ -188,10 +227,21 @@ final class DiffRenderContext[M](
     }
   }
 
-  private def readAttrRaw(x: ByteBuffer) = x.getInt()
-  private def readAttr(x: ByteBuffer) = idents(x.getInt())
-  private def readAttrText(x: ByteBuffer) = readText(x)
-  private def unOp(x: ByteBuffer) = x.position(x.position - 1)
+  private def readAttrRaw(x: ByteBuffer) = {
+    x.getInt()
+  }
+
+  private def readAttr(x: ByteBuffer) = {
+    idents(x.getInt())
+  }
+
+  private def readAttrText(x: ByteBuffer) = {
+    readText(x)
+  }
+
+  private def unOp(x: ByteBuffer) = {
+    x.position(x.position - 1)
+  }
 
   private def skipLoop(x: ByteBuffer): Unit = {
     val startLevel = counter.getLevel

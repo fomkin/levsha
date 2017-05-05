@@ -3,6 +3,7 @@ package levsha
 import levsha.impl.DiffRenderContext.ChangesPerformer
 
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
