@@ -1,57 +1,101 @@
-name := "levsha"
+val unusedRepo = Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
-version := "0.1.0"
-
-scalaVersion := "2.11.8" // Need by IntelliJ
-
-organization := "com.github.fomkin"
-
-//testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
-
-libraryDependencies ++= Seq(
-  // Macro compat
-  "org.typelevel" %% "macro-compat" % "1.1.1" % "provided",
-  "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  // Test
-  "com.lihaoyi" %% "utest" % "0.4.5" % "test",
-  "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ =>
+    false
+  },
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value) Some("snapshots" at s"${nexus}content/repositories/snapshots")
+    else Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
+  },
+  pomExtra := {
+    <url>https://github.com/fomkin/levsha</url>
+      <licenses>
+        <license>
+          <name>Apache License, Version 2.0</name>
+          <url>http://apache.org/licenses/LICENSE-2.0</url>
+          <distribution>repo</distribution>
+        </license>
+      </licenses>
+      <scm>
+        <url>git@github.com:fomkin/levsha.git</url>
+        <connection>scm:git:git@github.com:fomkin/levsha.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>fomkin</id>
+          <name>Aleksey Fomkin</name>
+          <email>aleksey.fomkin@gmail.com</email>
+        </developer>
+      </developers>
+  }
 )
 
-testFrameworks += new TestFramework("utest.runner.Framework")
+val dontPublishSettings = Seq(
+  publish := {},
+  publishTo := unusedRepo,
+  publishArtifact := false
+)
 
-publishMavenStyle := true
+val commonSettings = Seq(
+  organization := "com.github.fomkin",
+  version := "0.1.0",
+  scalaVersion := "2.12.2", // Need by IntelliJ
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-feature",
+    "-Xfatal-warnings"
+  )
+)
 
-publishArtifact in Test := false
+lazy val core = crossProject
+  .crossType(CrossType.Pure)
+  .settings(commonSettings: _*)
+  .settings(publishSettings: _*)
+  .settings(
+    name := "levsha",
+    libraryDependencies ++= Seq(
+      // Macro compat
+      "org.typelevel" %% "macro-compat" % "1.1.1" % "provided",
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+      compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+      // Test
+      "com.lihaoyi" %% "utest" % "0.4.5" % "test",
+      "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+    )
+  )
 
-pomIncludeRepository := { _ => false }
+lazy val coreJS = core.js
+lazy val coreJVM = core.jvm
 
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at s"${nexus}content/repositories/snapshots")
-  else Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
-}
+lazy val dom = project
+  .enablePlugins(ScalaJSPlugin)
+  .settings(commonSettings: _*)
+  .settings(publishSettings: _*)
+  .dependsOn(coreJS)
+  .settings(
+    name := "levsha-dom",
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "0.9.1"
+    )
+  )
 
-pomExtra := {
-  <url>https://github.com/fomkin/levsha</url>
-  <licenses>
-    <license>
-      <name>Apache License, Version 2.0</name>
-      <url>http://apache.org/licenses/LICENSE-2.0</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-  <scm>
-    <url>git@github.com:fomkin/levsha.git</url>
-    <connection>scm:git:git@github.com:fomkin/levsha.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>fomkin</id>
-      <name>Aleksey Fomkin</name>
-      <email>aleksey.fomkin@gmail.com</email>
-    </developer>
-  </developers>
-}
+lazy val bench = project
+  .enablePlugins(JmhPlugin)
+  .enablePlugins(SbtTwirl)
+  .settings(commonSettings: _*)
+  .settings(dontPublishSettings: _*)
+  .dependsOn(coreJVM)
+  .settings(
+    name := "levsha-bench",
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "scalatags" % "0.6.5"
+    )
+  )
 
+publishTo := unusedRepo
+publishArtifact := false
 crossScalaVersions := Seq("2.10.6", "2.11.11", "2.12.2")
