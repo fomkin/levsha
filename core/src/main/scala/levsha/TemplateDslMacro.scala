@@ -13,11 +13,13 @@ import macrocompat.bundle
 
   def node(children: Tree*)(rc: Tree): Tree = {
     val q"$conv($in)" = c.prefix.tree
-    val tag = toKebab(in)
+    val nodeName = toKebab(in)
+    val sortedChildren = children
+      .sortBy(_.tpe)(nodeChildrenOrdering)
     q"""
-      $rc.openNode($tag)
-      ..$children
-      $rc.closeNode($tag)
+      $rc.openNode($nodeName)
+      ..$sortedChildren
+      $rc.closeNode($nodeName)
     """
   }
 
@@ -30,5 +32,12 @@ import macrocompat.bundle
   def toKebab(tree: Tree): String = tree match {
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
     case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
+  }
+
+  val nodeChildrenOrdering = new Ordering[Type] {
+    def compare(x: Type, y: Type): Int = (x, y) match {
+      case (a, b) if a =:= typeOf[RenderUnit.Attr.type] => -1
+      case _ => 0
+    }
   }
 }
