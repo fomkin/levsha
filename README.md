@@ -38,6 +38,15 @@ println(html)
 </body>
 ```
 
+Benchmarks
+--------------
+
+In your sbt shell
+
+```
+bench/jmh:run
+```
+
 Worthy to note
 --------------
 

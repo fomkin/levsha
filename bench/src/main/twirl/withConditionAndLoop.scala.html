@@ -1,0 +1,15 @@
+@(condition: Boolean, leftBranch: String, rightBranch: String, items: Seq[String])
+
+<body>
+    <div class="title">
+        @(
+          if (condition) leftBranch
+          else rightBranch
+        )
+    </div>
+    <ul class="list">
+        @for(item <- items) {
+            <li>@item</li>
+        }
+    </ul>
+</body>

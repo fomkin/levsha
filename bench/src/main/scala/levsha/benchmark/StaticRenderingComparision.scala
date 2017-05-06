@@ -7,8 +7,8 @@ class StaticRenderingComparision {
 
   import StaticRenderingComparision.engines
 
-//  @Param(Array("levsha", "twirl", "scalatags", "beard"))
-  @Param(Array("levsha", "scalatags"))
+  // TODO "beard"
+  @Param(Array("levsha", "scalatags", "twirl"))
   var engineName: String = _
 
   @Benchmark def simpleHtml(): Unit = engines(engineName).simpleHtml()
@@ -119,7 +119,14 @@ object StaticRenderingComparision {
         tags.render
       }
     }
+    ,
 
+    "twirl" -> new TemplateEngine {
+      import sharedContent._
+      def simpleHtml(): Unit = html.simple()
+      def withVariables(): Unit = html.withVariables(greeting, className)
+      def withConditionAndLoop(): Unit = html.withConditionAndLoop(condition, leftBranch, rightBranch, items)
+    }
   )
 
   // The content should be rendered by template engine
