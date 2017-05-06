@@ -228,6 +228,7 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
     (op(x): @switch) match {
       case OpAttr => true
       case OpLastAttr => false
+      case OpEnd => false
     }
   }
 
@@ -274,7 +275,7 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
     var continue = true
     while (continue) {
       (op(x): @switch) match {
-        case OpClose =>
+        case OpClose | OpEnd =>
           if (counter.getLevel == startLevel) continue = false
           else counter.decLevel()
         case OpAttr =>

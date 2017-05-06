@@ -16,7 +16,7 @@ val features = Seq("Super-fast", "Off-heap")
 
 val html = renderHtml { implicit rc =>
   'body(
-    'div('class /= "title", "Hello, I'm levsha.benchmark.Levsha!"),
+    'div('class /= "title", "Hello, I'm Levsha!"),
     'ul('class /= "list",
       features map { feature =>
         'li('class /= "item", feature)
