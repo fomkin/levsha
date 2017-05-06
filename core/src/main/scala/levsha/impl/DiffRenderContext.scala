@@ -42,7 +42,6 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
   if ((bufferSize == 0) || ((bufferSize & (bufferSize - 1)) != 0))
     throw new IllegalArgumentException("bufferSize should be power of two")
 
-  private val idents = IntStringMap.ofSize(100)
   private val counter = IdCounter()
   private var attrsOpened = false
 
@@ -397,6 +396,8 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
 }
 
 object DiffRenderContext {
+
+  private[impl] val idents = IntStringMap.ofSize(100)
 
   def apply[MiscType](
     onMisc: MiscCallback[MiscType] = (_: String, _: MiscType) => (),

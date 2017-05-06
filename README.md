@@ -1,12 +1,12 @@
-levsha.benchmark.Levsha
+Levsha
 =======
 
-levsha.benchmark.Levsha is a fast HTML template engine and Scala eDSL, working without memory allocation. levsha.benchmark.Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
+Levsha is a fast HTML template engine and Scala eDSL, working without memory allocation. levsha.benchmark.Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
 
 Static rendering
 ----------------
 
-You can use levsha.benchmark.Levsha as a static HTML renderer.
+You can use Levsha as a static HTML renderer.
  
 ```scala
 import levsha.default.dsl._
@@ -50,4 +50,4 @@ bench/jmh:run
 Worthy to note
 --------------
 
-1. [The Tale of Cross-eyed Lefty from Tula and the Steel Flea]((https://en.wikipedia.org/wiki/The_Tale_of_Cross-eyed_Lefty_from_Tula_and_the_Steel_Flea))
+1. [The Tale of Cross-eyed Lefty from Tula and the Steel Flea](https://en.wikipedia.org/wiki/The_Tale_of_Cross-eyed_Lefty_from_Tula_and_the_Steel_Flea)

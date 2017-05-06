@@ -33,7 +33,7 @@ final class IntStringMap protected[debox] (ks: Array[Int], vs: Array[String], bs
     * On average, this is an amortized O(1) operation; the worst-case
     * is O(n), which will happen when the map needs to be resized.
     */
-  final def update(key: Int, value: String): Unit = {
+  final def update(key: Int, value: String): Unit = this.synchronized {
     @inline @tailrec
     def loop(i: Int, perturbation: Int, freeBlock: Int): Unit = {
       val j = i & mask
