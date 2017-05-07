@@ -37,7 +37,7 @@ attr {
 
 */
 
-final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends RenderContext[M] {
+final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends RenderContext[M] {
 
   if ((bufferSize == 0) || ((bufferSize & (bufferSize - 1)) != 0))
     throw new IllegalArgumentException("bufferSize should be power of two")

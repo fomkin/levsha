@@ -80,7 +80,8 @@ object Document {
         s"$level'$name(${attrsToString(attrs)})"
       case Document.Element(name, attrs, xs) =>
         val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
-        s"$level'$name(${attrsToString(attrs)},\n$children\n$level)"
+        val sep = if (attrs.isEmpty) "" else ","
+        s"$level'$name(${attrsToString(attrs)}$sep\n$children\n$level)"
     }
   }
 
@@ -292,7 +293,6 @@ object ChangesTrial {
                     i.last > thisIndex =>
                 i
             }
-            //(id :: toRemove).map(Change.remove)
             val idToRemove = if (toRemove.isEmpty) id else toRemove.last
             Seq(Change.remove(idToRemove))
           case Intent.SetAttr(id, attr, value) => Seq(Change.setAttr(id, attr, value))
