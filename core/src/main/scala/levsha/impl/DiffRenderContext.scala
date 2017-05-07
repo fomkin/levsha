@@ -50,12 +50,12 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
     buff.order(ByteOrder.nativeOrder())
   }
 
-  private var a = {
+  private var lhs = {
     buffer.limit(bufferSize / 2)
     buffer.slice().order(ByteOrder.nativeOrder())
   }
 
-  private var b = {
+  private var rhs = {
     buffer.position(bufferSize / 2)
     buffer.limit(buffer.capacity)
     buffer.slice().order(ByteOrder.nativeOrder())
@@ -67,8 +67,8 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
     attrsOpened = true
     counter.incId()
     counter.incLevel()
-    a.put(OpOpen.toByte)
-    a.putInt(name.hashCode)
+    lhs.put(OpOpen.toByte)
+    lhs.putInt(name.hashCode)
     idents.update(name.hashCode, name)
   }
 
@@ -76,17 +76,17 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
   def closeNode(name: String): Node.type = {
     closeAttrs()
     counter.decLevel()
-    a.put(OpClose.toByte)
+    lhs.put(OpClose.toByte)
     Node
   }
 
   /** @inheritdoc */
   def setAttr(name: String, value: String): Attr.type = {
     idents.update(name.hashCode, name)
-    a.put(OpAttr.toByte)
-    a.putInt(name.hashCode)
-    a.putShort(value.length.toShort)
-    a.put(value.getBytes(StandardCharsets.UTF_8))
+    lhs.put(OpAttr.toByte)
+    lhs.putInt(name.hashCode)
+    lhs.putShort(value.length.toShort)
+    lhs.put(value.getBytes(StandardCharsets.UTF_8))
     Attr
   }
 
@@ -94,9 +94,9 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
   def addTextNode(text: String): Text.type = {
     closeAttrs()
     counter.incId()
-    a.put(OpText.toByte)
-    a.putShort(text.length.toShort)
-    a.put(text.getBytes(StandardCharsets.UTF_8))
+    lhs.put(OpText.toByte)
+    lhs.putShort(text.length.toShort)
+    lhs.put(text.getBytes(StandardCharsets.UTF_8))
     Text
   }
 
@@ -108,36 +108,36 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
 
   /** Swap buffers */
   def swap(): Unit = {
-    a.flip()
-    val t = b
-    b = a
-    a = t
+    lhs.flip()
+    val t = rhs
+    rhs = lhs
+    lhs = t
     reset()
   }
 
   /** Cleanup current buffer */
   def reset(): Unit = {
-    a.position(0)
-    while (a.hasRemaining)
-      a.putInt(0)
-    a.clear()
+    lhs.position(0)
+    while (lhs.hasRemaining)
+      lhs.putInt(0)
+    lhs.clear()
   }
 
   def diff(performer: ChangesPerformer): Unit = {
-    a.flip()
+    lhs.flip()
     counter.reset()
 
-    while (a.hasRemaining) {
-      val opA = op(a)
-      val opB = op(b)
+    while (lhs.hasRemaining) {
+      val opA = op(lhs)
+      val opB = op(rhs)
       if (opA == OpOpen && opB == OpOpen) {
         counter.incId()
-        val tagA = readTag(a)
-        if (tagA != readTag(b)) {
+        val tagA = readTag(lhs)
+        if (tagA != readTag(rhs)) {
           performer.create(counter.currentString, idents(tagA))
-          skipLoop(b)
+          skipLoop(rhs)
           counter.incLevel()
-          createLoop(a, performer)
+          createLoop(lhs, performer)
           counter.decLevel()
         } else {
           compareAttrs(performer)
@@ -146,36 +146,36 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
       } else if (opA == OpText && opB == OpText) {
         counter.incId()
         if (!compareTexts()) {
-          skipText(b)
-          val textA = readText(a)
+          skipText(rhs)
+          val textA = readText(lhs)
           performer.createText(counter.currentString, textA)
         } else {
-          skipText(a)
-          skipText(b)
+          skipText(lhs)
+          skipText(rhs)
         }
       } else if (opA == OpText && opB == OpOpen) {
-        val aText = readText(a)
-        readTag(b) // skip tag b
+        val aText = readText(lhs)
+        readTag(rhs) // skip tag b
         counter.incId()
         performer.createText(counter.currentString, aText)
-        skipLoop(b)
+        skipLoop(rhs)
       } else if (opA == OpOpen && opB == OpText) {
-        val tagA = readTag(a)
+        val tagA = readTag(lhs)
         counter.incId()
-        skipText(b)
+        skipText(rhs)
         performer.create(counter.currentString, idents(tagA))
         counter.incLevel()
-        createLoop(a, performer)
+        createLoop(lhs, performer)
         counter.decLevel()
       } else if (opA == OpClose && opB == OpClose) {
         counter.decLevel()
       } else if ((opA == OpClose || opA == OpEnd) && opB != OpClose && opB != OpEnd) {
-        unOp(b)
-        deleteLoop(b, performer)
+        unOp(rhs)
+        deleteLoop(rhs, performer)
         counter.decLevel()
       } else if (opA != OpClose && opA != OpEnd && (opB == OpClose || opB == OpEnd)) {
-        unOp(a)
-        createLoop(a, performer)
+        unOp(lhs)
+        createLoop(lhs, performer)
         counter.decLevel()
       }
     }
@@ -184,7 +184,7 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
   private def closeAttrs(): Unit = {
     if (attrsOpened) {
       attrsOpened = false
-      a.put(OpLastAttr.toByte)
+      lhs.put(OpLastAttr.toByte)
     }
   }
 
@@ -315,17 +315,17 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
   /* O(n^2). but it doesn't matter.
    most of nodes usually have just one or two attrs */
   private def compareAttrs(performer: ChangesPerformer): Unit = {
-    val startPosA = a.position()
-    val startPosB = b.position()
+    val startPosA = lhs.position()
+    val startPosB = rhs.position()
     // Check the attrs were removed
-    while (checkAttr(b)) {
-      val attrNameB = readAttrRaw(b)
+    while (checkAttr(rhs)) {
+      val attrNameB = readAttrRaw(rhs)
       var needToRemove = true
-      skipAttrText(b)
-      a.position(startPosA)
-      while (needToRemove && checkAttr(a)) {
-        val attrNameA = readAttrRaw(a)
-        skipAttrText(a)
+      skipAttrText(rhs)
+      lhs.position(startPosA)
+      while (needToRemove && checkAttr(lhs)) {
+        val attrNameA = readAttrRaw(lhs)
+        skipAttrText(lhs)
         if (attrNameA == attrNameB)
           needToRemove = false
       }
@@ -334,63 +334,63 @@ final class DiffRenderContext[M](mc: MiscCallback[M], bufferSize: Int) extends R
       }
     }
     // Check the attrs were added
-    val endPosB = b.position()
-    a.position(startPosA)
-    while (checkAttr(a)) {
-      val nameA = readAttrRaw(a)
-      val valueLenA = a.getShort()
-      val valuePosA = a.position()
+    val endPosB = rhs.position()
+    lhs.position(startPosA)
+    while (checkAttr(lhs)) {
+      val nameA = readAttrRaw(lhs)
+      val valueLenA = lhs.getShort()
+      val valuePosA = lhs.position()
       var needToSet = true
-      b.position(startPosB)
-      while (needToSet && checkAttr(b)) {
-        val nameB = readAttrRaw(b)
-        val valueLenB = b.getShort()
-        val valuePosB = b.position()
+      rhs.position(startPosB)
+      while (needToSet && checkAttr(rhs)) {
+        val nameB = readAttrRaw(rhs)
+        val valueLenB = rhs.getShort()
+        val valuePosB = rhs.position()
         // First condition: name of attributes should be equals
         if (nameA == nameB) {
           if (valueLenA == valueLenB) {
             var i = 0
             var eq = true
-            a.position(valuePosA)
+            lhs.position(valuePosA)
             while (eq && i < valueLenA) {
-              if (a.get() != b.get()) eq = false
+              if (lhs.get() != rhs.get()) eq = false
               i += 1
             }
             if (eq) needToSet = false
           }
         }
-        b.position(valuePosB + valueLenB)
+        rhs.position(valuePosB + valueLenB)
       }
       if (needToSet) {
-        a.position(valuePosA)
-        val valueA = readAttrText(a, valueLenA)
+        lhs.position(valuePosA)
+        val valueA = readAttrText(lhs, valueLenA)
         performer.setAttr(counter.currentString, idents(nameA), valueA)
       } else {
-        a.position(valuePosA + valueLenA)
+        lhs.position(valuePosA + valueLenA)
       }
     }
-    b.position(endPosB)
+    rhs.position(endPosB)
   }
 
   private def compareTexts(): Boolean = {
-    val startPosA = a.position()
-    val startPosB = b.position()
-    val aLen = a.getShort()
-    val bLen = b.getShort()
+    val startPosA = lhs.position()
+    val startPosB = rhs.position()
+    val aLen = lhs.getShort()
+    val bLen = rhs.getShort()
     if (aLen != bLen) {
-      a.position(startPosA)
-      b.position(startPosB)
+      lhs.position(startPosA)
+      rhs.position(startPosB)
       false
     } else {
       var i = 0
       var equals = true
       while (equals && i < aLen) {
-        if (a.get() != b.get())
+        if (lhs.get() != rhs.get())
           equals = false
         i += 1
       }
-      a.position(startPosA)
-      b.position(startPosB)
+      lhs.position(startPosA)
+      rhs.position(startPosB)
       equals
     }
   }
