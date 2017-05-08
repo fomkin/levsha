@@ -3,7 +3,7 @@ package levsha.impl
 import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
-import levsha.{IdBuilder, RenderContext}
+import levsha.{Id, IdBuilder, RenderContext}
 import levsha.RenderUnit.{Attr, Misc, Node, Text}
 import levsha.impl.DiffRenderContext._
 
@@ -102,7 +102,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
 
   /** @inheritdoc */
   def addMisc(misc: M): Misc = {
-    mc(idb.mkString, misc)
+    mc(idb.mkId, misc)
     Misc
   }
 
@@ -134,7 +134,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
         idb.incId()
         val tagA = readTag(lhs)
         if (tagA != readTag(rhs)) {
-          performer.create(idb.mkString, idents(tagA))
+          performer.create(idb.mkId, idents(tagA))
           skipLoop(rhs)
           idb.incLevel()
           createLoop(lhs, performer)
@@ -148,7 +148,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
         if (!compareTexts()) {
           skipText(rhs)
           val textA = readText(lhs)
-          performer.createText(idb.mkString, textA)
+          performer.createText(idb.mkId, textA)
         } else {
           skipText(lhs)
           skipText(rhs)
@@ -157,13 +157,13 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
         val aText = readText(lhs)
         readTag(rhs) // skip tag b
         idb.incId()
-        performer.createText(idb.mkString, aText)
+        performer.createText(idb.mkId, aText)
         skipLoop(rhs)
       } else if (opA == OpOpen && opB == OpText) {
         val tagA = readTag(lhs)
         idb.incId()
         skipText(rhs)
-        performer.create(idb.mkString, idents(tagA))
+        performer.create(idb.mkId, idents(tagA))
         idb.incLevel()
         createLoop(lhs, performer)
         idb.decLevel()
@@ -280,14 +280,14 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
           else idb.decLevel()
         case OpAttr =>
           idb.decLevelTmp()
-          performer.setAttr(idb.mkString, readAttr(x), readAttrText(x))
+          performer.setAttr(idb.mkId, readAttr(x), readAttrText(x))
           idb.incLevel()
         case OpText =>
           idb.incId()
-          performer.createText(idb.mkString, readText(x))
+          performer.createText(idb.mkId, readText(x))
         case OpOpen =>
           idb.incId()
-          performer.create(idb.mkString, idents(x.getInt()))
+          performer.create(idb.mkId, idents(x.getInt()))
           idb.incLevel()
         case OpLastAttr => // do nothing
       }
@@ -301,12 +301,12 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
         case OpOpen =>
           x.getInt() // skip tag
           idb.incId()
-          performer.remove(idb.mkString)
+          performer.remove(idb.mkId)
           skipLoop(x)
         case OpText =>
           skipText(x)
           idb.incId()
-          performer.remove(idb.mkString)
+          performer.remove(idb.mkId)
         case OpClose | OpEnd => continue = false
       }
     }
@@ -330,7 +330,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
           needToRemove = false
       }
       if (needToRemove) {
-        performer.removeAttr(idb.mkString, idents(attrNameB))
+        performer.removeAttr(idb.mkId, idents(attrNameB))
       }
     }
     // Check the attrs were added
@@ -364,7 +364,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
       if (needToSet) {
         lhs.position(valuePosA)
         val valueA = readAttrText(lhs, valueLenA)
-        performer.setAttr(idb.mkString, idents(nameA), valueA)
+        performer.setAttr(idb.mkId, idents(nameA), valueA)
       } else {
         lhs.position(valuePosA + valueLenA)
       }
@@ -401,29 +401,29 @@ object DiffRenderContext {
   private[impl] val idents = IntStringMap.ofSize(100)
 
   def apply[MiscType](
-    onMisc: MiscCallback[MiscType] = (_: String, _: MiscType) => (),
+    onMisc: MiscCallback[MiscType] = (_: Id, _: MiscType) => (),
     bufferSize: Int = 1024 * 64
   ): DiffRenderContext[MiscType] = {
     new DiffRenderContext[MiscType](onMisc, bufferSize)
   }
 
   trait ChangesPerformer {
-    def removeAttr(id: String, name: String): Unit
-    def remove(id: String): Unit
-    def setAttr(id: String, name: String, value: String): Unit
-    def createText(id: String, text: String): Unit
-    def create(id: String, tag: String): Unit
+    def removeAttr(id: Id, name: String): Unit
+    def remove(id: Id): Unit
+    def setAttr(id: Id, name: String, value: String): Unit
+    def createText(id: Id, text: String): Unit
+    def create(id: Id, tag: String): Unit
   }
 
   final class DummyChangesPerformer extends ChangesPerformer {
-    def removeAttr(id: String, name: String): Unit = ()
-    def remove(id: String): Unit = ()
-    def setAttr(id: String, name: String, value: String): Unit = ()
-    def createText(id: String, text: String): Unit = ()
-    def create(id: String, tag: String): Unit = ()
+    def removeAttr(id: Id, name: String): Unit = ()
+    def remove(id: Id): Unit = ()
+    def setAttr(id: Id, name: String, value: String): Unit = ()
+    def createText(id: Id, text: String): Unit = ()
+    def create(id: Id, tag: String): Unit = ()
   }
 
-  type MiscCallback[MiscType] = (String, MiscType) => Unit
+  type MiscCallback[MiscType] = (Id, MiscType) => Unit
 
   // Opcodes
   final val OpOpen = 1

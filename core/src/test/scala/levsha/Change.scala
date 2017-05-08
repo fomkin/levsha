@@ -18,16 +18,16 @@ object Change {
 
   final class DiffTestChangesPerformer extends ChangesPerformer {
     private val buffer = mutable.Buffer.empty[Change]
-    def removeAttr(id: String, name: String): Unit =
-      buffer += Change.removeAttr(id, name)
-    def remove(id: String): Unit =
-      buffer += Change.remove(id)
-    def setAttr(id: String, name: String, value: String): Unit =
-      buffer += Change.setAttr(id, name, value)
-    def createText(id: String, text: String): Unit =
-      buffer += Change.createText(id, text)
-    def create(id: String, tag: String): Unit =
-      buffer += Change.create(id, tag)
+    def removeAttr(id: Id, name: String): Unit =
+      buffer += Change.removeAttr(id.toList.map(_.toInt), name)
+    def remove(id: Id): Unit =
+      buffer += Change.remove(id.toList.map(_.toInt))
+    def setAttr(id: Id, name: String, value: String): Unit =
+      buffer += Change.setAttr(id.toList.map(_.toInt), name, value)
+    def createText(id: Id, text: String): Unit =
+      buffer += Change.createText(id.toList.map(_.toInt), text)
+    def create(id: Id, tag: String): Unit =
+      buffer += Change.create(id.toList.map(_.toInt), tag)
     def result: Seq[Change] = buffer
   }
 

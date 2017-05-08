@@ -1,21 +1,21 @@
 package levsha
 
+import java.util
+
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-final class Id(array: Array[Short]) {
+final class Id(private val array: Array[Short]) { lhs =>
 
-  def length: Int = array.length
+  def level: Int = array.length
 
-  def parent: Id = take(length - 1)
+  def parent: Id = take(level - 1)
 
   def take(num: Int): Id = {
     val na = new Array[Short](num)
     Array.copy(array, 0, na, 0, num)
     new Id(na)
   }
-
-  override def toString: String = mkString
 
   def mkString: String = mkString('_')
 
@@ -31,6 +31,17 @@ final class Id(array: Array[Short]) {
     }
     sb.mkString
   }
+
+  def toList: List[Short] = array.toList
+
+  override def toString: String = mkString
+
+  override def equals(obj: Any): Boolean = obj match {
+    case rhs: Id => util.Arrays.equals(lhs.array, rhs.array)
+    case _ => false
+  }
+
+  override def hashCode(): Int = util.Arrays.hashCode(array)
 }
 
 object Id {
