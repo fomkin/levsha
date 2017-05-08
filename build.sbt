@@ -61,7 +61,7 @@ lazy val core = crossProject
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    name := "levsha",
+    name := "levsha-core",
     libraryDependencies ++= Seq(
       // Macro compat
       "org.typelevel" %% "macro-compat" % "1.1.1" % "provided",
@@ -91,7 +91,7 @@ lazy val dom = project
   .dependsOn(eventsJS)
   .settings(
     name := "levsha-dom",
-    scalaJSUseMainModuleInitializer := true,
+    //scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1"
     )
@@ -110,6 +110,14 @@ lazy val bench = project
     )
   )
 
-publishTo := unusedRepo
-publishArtifact := false
+lazy val root = project
+  .in(file("."))
+  .settings(dontPublishSettings:_*  )
+  .settings(name := "levsha")
+  .aggregate(
+    coreJS, coreJVM,
+    eventsJS, eventsJVM,
+    dom
+  )
+
 crossScalaVersions := Seq("2.11.11", "2.12.2")

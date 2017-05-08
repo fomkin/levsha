@@ -15,11 +15,11 @@ class TemplateDsl[MiscType] {
   /** Converts () to empty template */
   @inline implicit def unitToEmpty(value: Unit): RenderUnit = Empty
 
-  /** Converts [[String]] to text document node */
+  /** Converts String to text document node */
   @inline implicit def stringToText(value: String)(implicit rc: RC): Text.type =
     rc.addTextNode(value)
 
-  /** Converts [[MiscType]] to text document node */
+  /** Converts MiscType to text document node */
   @inline implicit def miscWrapper(value: MiscType)(implicit rc: RC): Misc.type =
     rc.addMisc(value)
 

@@ -67,7 +67,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
       .asInstanceOf[ByteBuffer]
   }
 
-  /** @inheritdoc */
   def openNode(name: String): Unit = {
     closeAttrs()
     attrsOpened = true
@@ -78,7 +77,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
     idents.update(name.hashCode, name)
   }
 
-  /** @inheritdoc */
   def closeNode(name: String): Node.type = {
     closeAttrs()
     idb.decLevel()
@@ -86,7 +84,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
     Node
   }
 
-  /** @inheritdoc */
   def setAttr(name: String, value: String): Attr.type = {
     val bytes = value.getBytes(StandardCharsets.UTF_8)
     idents.update(name.hashCode, name)
@@ -97,7 +94,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
     Attr
   }
 
-  /** @inheritdoc */
   def addTextNode(text: String): Text.type = {
     val bytes = text.getBytes(StandardCharsets.UTF_8)
     closeAttrs()
@@ -108,7 +104,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
     Text
   }
 
-  /** @inheritdoc */
   def addMisc(misc: M): Misc = {
     idb.decLevelTmp()
     mc(idb.mkId, misc)
