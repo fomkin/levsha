@@ -13,18 +13,18 @@ class TemplateDsl[MiscType] {
   type RC = RenderContext[MiscType]
   
   /** Converts () to empty template */
-  @inline implicit def unit(value: Unit): RenderUnit = Empty
+  @inline implicit def unitToEmpty(value: Unit): RenderUnit = Empty
 
   /** Converts [[String]] to text document node */
-  @inline implicit def text(value: String)(implicit rc: RC): Text.type =
+  @inline implicit def stringToText(value: String)(implicit rc: RC): Text.type =
     rc.addTextNode(value)
 
   /** Converts [[MiscType]] to text document node */
-  @inline implicit def misc(value: MiscType)(implicit rc: RC): Misc.type =
+  @inline implicit def miscWrapper(value: MiscType)(implicit rc: RC): Misc.type =
     rc.addMisc(value)
 
   /** Converts iterable of templates to document fragment */
-  @inline implicit def seq(xs: Iterable[NodeLike]): RenderUnit = Node
+  @inline implicit def seqToNodeFragment(xs: Iterable[NodeLike]): RenderUnit = Node
 
   /** Implicitly unwraps optional documents */
   @inline implicit def unwrapOption(templateOpt: Option[RenderUnit]): RenderUnit = Node

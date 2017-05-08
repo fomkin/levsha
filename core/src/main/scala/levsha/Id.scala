@@ -9,7 +9,7 @@ final class Id(private val array: Array[Short]) { lhs =>
 
   def level: Int = array.length
 
-  def parent: Id = take(level - 1)
+  def parent: Option[Id] = if (level == 1) None else Some(take(level - 1))
 
   def take(num: Int): Id = {
     val na = new Array[Short](num)
@@ -19,7 +19,9 @@ final class Id(private val array: Array[Short]) { lhs =>
 
   def mkString: String = mkString('_')
 
-  def mkString(sep: Char): String = {
+  def mkString(sep: Char): String = if (array.length == 0) {
+    ""
+  } else {
     val sb = StringBuilder.newBuilder
     var i = 0
     var continue = true
@@ -47,4 +49,7 @@ final class Id(private val array: Array[Short]) { lhs =>
 object Id {
   def apply(xs: Short*): Id =
     new Id(xs.toArray)
+
+  def apply(s: String, sep: Char = '_'): Id =
+    new Id(s.split(sep).map(_.toShort))
 }

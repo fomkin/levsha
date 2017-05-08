@@ -91,6 +91,7 @@ lazy val dom = project
   .dependsOn(eventsJS)
   .settings(
     name := "levsha-dom",
+    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1"
     )

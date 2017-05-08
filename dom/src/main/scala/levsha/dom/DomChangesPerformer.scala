@@ -6,34 +6,39 @@ import org.scalajs.dom.{Element, Node}
 import org.scalajs.{dom => browserDom}
 
 import scala.collection.mutable
+import scala.scalajs.js
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
 final class DomChangesPerformer(target: Element) extends ChangesPerformer {
 
-  private val index = mutable.Map[Id, Node](Id(1) -> target)
+  private val index = mutable.Map[Id, Node](Id(1.toShort) -> target)
 
-  private def create(id: Id, createNewElement: () => Node): Unit = {
+  private def create(id: Id)(createNewElement: => Node): Unit = {
     val parentId = id.parent
-    index.get(parentId) foreach { parent =>
-      val newEl = createNewElement()
+    parentId.flatMap(index.get) foreach { parent =>
+      val newEl = createNewElement
+      newEl.asInstanceOf[js.Dynamic]
+        .vid = id.mkString
       index.get(id) match {
-        case Some(oldEl) =>
+        case Some(oldEl) if oldEl.parentNode == parent =>
           parent.replaceChild(newEl, oldEl)
           index.update(id, newEl)
-        case None =>
+        case _ =>
           parent.appendChild(newEl)
           index.update(id, newEl)
       }
     }
   }
 
-  def createText(id: Id, text: String): Unit =
-    create(id, () => browserDom.document.createTextNode(text))
+  def createText(id: Id, text: String): Unit = create(id) {
+    browserDom.document.createTextNode(text)
+  }
 
-  def create(id: Id, tag: String): Unit =
-    create(id, () => browserDom.document.createElement(tag))
+  def create(id: Id, tag: String): Unit = create(id) {
+    browserDom.document.createElement(tag)
+  }
 
   def remove(id: Id): Unit = index.remove(id) foreach { el =>
     el.parentNode.removeChild(el)

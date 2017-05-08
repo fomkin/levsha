@@ -52,13 +52,19 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
 
   private var lhs = {
     buffer.limit(bufferSize / 2)
-    buffer.slice().order(ByteOrder.nativeOrder())
+    buffer
+      .slice()
+      .order(ByteOrder.nativeOrder())
   }
 
   private var rhs = {
     buffer.position(bufferSize / 2)
     buffer.limit(buffer.capacity)
-    buffer.slice().order(ByteOrder.nativeOrder())
+    buffer
+      .slice()
+      .order(ByteOrder.nativeOrder())
+      .flip()
+      .asInstanceOf[ByteBuffer]
   }
 
   /** @inheritdoc */
@@ -82,33 +88,36 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
 
   /** @inheritdoc */
   def setAttr(name: String, value: String): Attr.type = {
+    val bytes = value.getBytes(StandardCharsets.UTF_8)
     idents.update(name.hashCode, name)
     lhs.put(OpAttr.toByte)
     lhs.putInt(name.hashCode)
-    lhs.putShort(value.length.toShort)
-    lhs.put(value.getBytes(StandardCharsets.UTF_8))
+    lhs.putShort(bytes.length.toShort)
+    lhs.put(bytes)
     Attr
   }
 
   /** @inheritdoc */
   def addTextNode(text: String): Text.type = {
+    val bytes = text.getBytes(StandardCharsets.UTF_8)
     closeAttrs()
     idb.incId()
     lhs.put(OpText.toByte)
-    lhs.putShort(text.length.toShort)
-    lhs.put(text.getBytes(StandardCharsets.UTF_8))
+    lhs.putShort(bytes.length.toShort)
+    lhs.put(bytes)
     Text
   }
 
   /** @inheritdoc */
   def addMisc(misc: M): Misc = {
+    idb.decLevelTmp()
     mc(idb.mkId, misc)
+    idb.incLevel()
     Misc
   }
 
   /** Swap buffers */
   def swap(): Unit = {
-    lhs.flip()
     val t = rhs
     rhs = lhs
     lhs = t
@@ -117,9 +126,10 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
 
   /** Cleanup current buffer */
   def reset(): Unit = {
+    idb.reset()
     lhs.position(0)
     while (lhs.hasRemaining)
-      lhs.putInt(0)
+      lhs.put(0.toByte)
     lhs.clear()
   }
 
@@ -179,6 +189,9 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
         idb.decLevel()
       }
     }
+
+    lhs.rewind()
+    rhs.rewind()
   }
 
   private def closeAttrs(): Unit = {
@@ -423,7 +436,7 @@ object DiffRenderContext {
     def create(id: Id, tag: String): Unit = ()
   }
 
-  type MiscCallback[MiscType] = (Id, MiscType) => Unit
+  type MiscCallback[MiscType] = (Id, MiscType) => _
 
   // Opcodes
   final val OpOpen = 1
