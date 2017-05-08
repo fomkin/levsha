@@ -65,17 +65,29 @@ lazy val core = crossProject
       // Test
       "com.lihaoyi" %% "utest" % "0.4.5" % "test",
       "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
-    )
+    ),
+    testFrameworks += new TestFramework("utest.runner.Framework")
   )
 
 lazy val coreJS = core.js
 lazy val coreJVM = core.jvm
+
+lazy val events = crossProject
+  .crossType(CrossType.Pure)
+  .settings(commonSettings: _*)
+  .settings(publishSettings: _*)
+  .settings(name := "levsha-events")
+  .dependsOn(core)
+
+lazy val eventsJS = events.js
+lazy val eventsJVM = events.jvm
 
 lazy val dom = project
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .dependsOn(coreJS)
+  .dependsOn(eventsJS)
   .settings(
     name := "levsha-dom",
     libraryDependencies ++= Seq(

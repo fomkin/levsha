@@ -3,7 +3,7 @@ package levsha.impl
 import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
-import levsha.RenderContext
+import levsha.{IdBuilder, RenderContext}
 import levsha.RenderUnit.{Attr, Misc, Node, Text}
 import levsha.impl.DiffRenderContext._
 
@@ -42,7 +42,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   if ((bufferSize == 0) || ((bufferSize & (bufferSize - 1)) != 0))
     throw new IllegalArgumentException("bufferSize should be power of two")
 
-  private val counter = IdCounter()
+  private val idb = IdBuilder()
   private var attrsOpened = false
 
   private val buffer = {
@@ -65,8 +65,8 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   def openNode(name: String): Unit = {
     closeAttrs()
     attrsOpened = true
-    counter.incId()
-    counter.incLevel()
+    idb.incId()
+    idb.incLevel()
     lhs.put(OpOpen.toByte)
     lhs.putInt(name.hashCode)
     idents.update(name.hashCode, name)
@@ -75,7 +75,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   /** @inheritdoc */
   def closeNode(name: String): Node.type = {
     closeAttrs()
-    counter.decLevel()
+    idb.decLevel()
     lhs.put(OpClose.toByte)
     Node
   }
@@ -93,7 +93,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   /** @inheritdoc */
   def addTextNode(text: String): Text.type = {
     closeAttrs()
-    counter.incId()
+    idb.incId()
     lhs.put(OpText.toByte)
     lhs.putShort(text.length.toShort)
     lhs.put(text.getBytes(StandardCharsets.UTF_8))
@@ -102,7 +102,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
 
   /** @inheritdoc */
   def addMisc(misc: M): Misc = {
-    mc(counter.currentString, misc)
+    mc(idb.mkString, misc)
     Misc
   }
 
@@ -125,30 +125,30 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
 
   def diff(performer: ChangesPerformer): Unit = {
     lhs.flip()
-    counter.reset()
+    idb.reset()
 
     while (lhs.hasRemaining) {
       val opA = op(lhs)
       val opB = op(rhs)
       if (opA == OpOpen && opB == OpOpen) {
-        counter.incId()
+        idb.incId()
         val tagA = readTag(lhs)
         if (tagA != readTag(rhs)) {
-          performer.create(counter.currentString, idents(tagA))
+          performer.create(idb.mkString, idents(tagA))
           skipLoop(rhs)
-          counter.incLevel()
+          idb.incLevel()
           createLoop(lhs, performer)
-          counter.decLevel()
+          idb.decLevel()
         } else {
           compareAttrs(performer)
-          counter.incLevel()
+          idb.incLevel()
         }
       } else if (opA == OpText && opB == OpText) {
-        counter.incId()
+        idb.incId()
         if (!compareTexts()) {
           skipText(rhs)
           val textA = readText(lhs)
-          performer.createText(counter.currentString, textA)
+          performer.createText(idb.mkString, textA)
         } else {
           skipText(lhs)
           skipText(rhs)
@@ -156,27 +156,27 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
       } else if (opA == OpText && opB == OpOpen) {
         val aText = readText(lhs)
         readTag(rhs) // skip tag b
-        counter.incId()
-        performer.createText(counter.currentString, aText)
+        idb.incId()
+        performer.createText(idb.mkString, aText)
         skipLoop(rhs)
       } else if (opA == OpOpen && opB == OpText) {
         val tagA = readTag(lhs)
-        counter.incId()
+        idb.incId()
         skipText(rhs)
-        performer.create(counter.currentString, idents(tagA))
-        counter.incLevel()
+        performer.create(idb.mkString, idents(tagA))
+        idb.incLevel()
         createLoop(lhs, performer)
-        counter.decLevel()
+        idb.decLevel()
       } else if (opA == OpClose && opB == OpClose) {
-        counter.decLevel()
+        idb.decLevel()
       } else if ((opA == OpClose || opA == OpEnd) && opB != OpClose && opB != OpEnd) {
         unOp(rhs)
         deleteLoop(rhs, performer)
-        counter.decLevel()
+        idb.decLevel()
       } else if (opA != OpClose && opA != OpEnd && (opB == OpClose || opB == OpEnd)) {
         unOp(lhs)
         createLoop(lhs, performer)
-        counter.decLevel()
+        idb.decLevel()
       }
     }
   }
@@ -253,42 +253,42 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   }
 
   private def skipLoop(x: ByteBuffer): Unit = {
-    val startLevel = counter.getLevel
+    val startLevel = idb.getLevel
     var continue = true
     while (continue) {
       (op(x): @switch) match {
         case OpClose =>
-          if (counter.getLevel == startLevel) continue = false
-          else counter.decLevel()
+          if (idb.getLevel == startLevel) continue = false
+          else idb.decLevel()
         case OpAttr => skipAttr(x)
         case OpLastAttr => // do nothing
         case OpText => skipText(x)
         case OpOpen =>
           x.getInt() // skip tag
-          counter.incLevel()
+          idb.incLevel()
       }
     }
   }
 
   private def createLoop(x: ByteBuffer, performer: ChangesPerformer): Unit = {
-    val startLevel = counter.getLevel
+    val startLevel = idb.getLevel
     var continue = true
     while (continue) {
       (op(x): @switch) match {
         case OpClose | OpEnd =>
-          if (counter.getLevel == startLevel) continue = false
-          else counter.decLevel()
+          if (idb.getLevel == startLevel) continue = false
+          else idb.decLevel()
         case OpAttr =>
-          counter.decLevelTmp()
-          performer.setAttr(counter.currentString, readAttr(x), readAttrText(x))
-          counter.incLevel()
+          idb.decLevelTmp()
+          performer.setAttr(idb.mkString, readAttr(x), readAttrText(x))
+          idb.incLevel()
         case OpText =>
-          counter.incId()
-          performer.createText(counter.currentString, readText(x))
+          idb.incId()
+          performer.createText(idb.mkString, readText(x))
         case OpOpen =>
-          counter.incId()
-          performer.create(counter.currentString, idents(x.getInt()))
-          counter.incLevel()
+          idb.incId()
+          performer.create(idb.mkString, idents(x.getInt()))
+          idb.incLevel()
         case OpLastAttr => // do nothing
       }
     }
@@ -300,13 +300,13 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
       (op(x): @switch) match {
         case OpOpen =>
           x.getInt() // skip tag
-          counter.incId()
-          performer.remove(counter.currentString)
+          idb.incId()
+          performer.remove(idb.mkString)
           skipLoop(x)
         case OpText =>
           skipText(x)
-          counter.incId()
-          performer.remove(counter.currentString)
+          idb.incId()
+          performer.remove(idb.mkString)
         case OpClose | OpEnd => continue = false
       }
     }
@@ -330,7 +330,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
           needToRemove = false
       }
       if (needToRemove) {
-        performer.removeAttr(counter.currentString, idents(attrNameB))
+        performer.removeAttr(idb.mkString, idents(attrNameB))
       }
     }
     // Check the attrs were added
@@ -364,7 +364,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
       if (needToSet) {
         lhs.position(valuePosA)
         val valueA = readAttrText(lhs, valueLenA)
-        performer.setAttr(counter.currentString, idents(nameA), valueA)
+        performer.setAttr(idb.mkString, idents(nameA), valueA)
       } else {
         lhs.position(valuePosA + valueLenA)
       }
@@ -432,76 +432,4 @@ object DiffRenderContext {
   final val OpText = 4
   final val OpLastAttr = 5
   final val OpEnd = 6
-
-  object IdCounter {
-    def apply(maxLevel: Int = 256): IdCounter =
-      new IdCounter(maxLevel)
-  }
-
-  final class IdCounter(maxLevel: Int) {
-
-    private var level = 1
-    private val buffer = ByteBuffer.allocate(maxLevel * 2)
-
-    private def index = (level - 1) * 2
-
-    // Initial limit
-    buffer.limit(level * 2)
-
-    def incLevel(): Unit = {
-      level += 1
-      buffer.limit(level * 2)
-    }
-
-    /** Just decreases level */
-    def decLevelTmp(): Unit = {
-      level -= 1
-      buffer.limit(level * 2)
-    }
-
-    /** Resets current id and decreases level */
-    def decLevel(): Unit = {
-      buffer.putShort(index, 0)
-      level -= 1
-      buffer.limit(level * 2)
-    }
-
-    def incId(): Unit = {
-      val updated = buffer.getShort(index) + 1
-      buffer.putShort(index, updated.toShort)
-    }
-
-    def getLevel: Int = level
-
-    def current: Array[Byte] = {
-      val clone = new Array[Byte](buffer.limit)
-      buffer.rewind()
-      var i = 0
-      while (buffer.hasRemaining) {
-        clone(i) = buffer.get()
-        i += 1
-      }
-      clone
-    }
-
-    def currentString: String = {
-      val builder = StringBuilder.newBuilder
-      buffer.rewind()
-      while (buffer.hasRemaining) {
-        builder.append(buffer.getShort())
-        if (buffer.hasRemaining)
-          builder.append('_')
-      }
-      builder.mkString
-    }
-
-    def reset(): Unit = {
-      buffer.clear()
-      while (buffer.hasRemaining)
-        buffer.putInt(0)
-      level = 1
-      buffer.rewind()
-      buffer.limit(level * 2)
-    }
-  }
 }
