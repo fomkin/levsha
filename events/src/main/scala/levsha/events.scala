@@ -20,7 +20,7 @@ object events {
       }
     }
 
-    val capturing = capture(Nil, 1, target)
+    val capturing = capture(Nil, 1, target).reverse
     val atTarget = EventId(target, `type`, AtTarget)
     val bubbling = {
       val xs = capturing.reverse.map(_.copy(phase = Bubbling))

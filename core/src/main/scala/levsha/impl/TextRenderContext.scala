@@ -2,6 +2,7 @@ package levsha.impl
 
 import levsha.RenderContext
 import levsha.RenderUnit.{Attr, Misc, Node, Text}
+import levsha.impl.internal.Op._
 
 /**
   * Generates HTML
@@ -10,21 +11,22 @@ import levsha.RenderUnit.{Attr, Misc, Node, Text}
 final class TextRenderContext extends RenderContext[Nothing] {
 
   private val builder = StringBuilder.newBuilder
-  private var attrsStarted = false
+  private var lastOp = OpClose
 
   def openNode(name: String): Unit = {
-    if (attrsStarted) builder.append('>')
+    if (lastOp != OpClose) builder.append('>')
     builder.append('<')
     builder.append(name)
-    attrsStarted = true
+    lastOp = OpOpen
   }
 
   def closeNode(name: String): Node.type = {
+    if (lastOp == OpAttr) builder.append('>')
     builder.append('<')
     builder.append('/')
     builder.append(name)
     builder.append('>')
-    attrsStarted = false
+    lastOp = OpClose
     Node
   }
 
@@ -35,12 +37,14 @@ final class TextRenderContext extends RenderContext[Nothing] {
     builder.append('"')
     builder.append(value)
     builder.append('"')
+    lastOp = OpAttr
     Attr
   }
 
   def addTextNode(text: String): Text.type = {
-    if (attrsStarted) builder.append('>')
+    if (lastOp != OpClose) builder.append('>')
     builder.append(text)
+    lastOp = OpText
     Text
   }
 

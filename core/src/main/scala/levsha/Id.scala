@@ -43,7 +43,7 @@ final class Id(private val array: Array[Short]) { lhs =>
     case _ => false
   }
 
-  override def hashCode(): Int = util.Arrays.hashCode(array)
+  override lazy val hashCode: Int = util.Arrays.hashCode(array)
 }
 
 object Id {

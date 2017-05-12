@@ -1,8 +1,8 @@
 Levsha
 =======
 
-Levsha is a fast HTML template engine and Scala eDSL, working without heavy memory allocation. Levsha 
-supports changeset inference, which allows to use it as virtual-dom-like middleware. 
+Levsha is a fast HTML template engine and Scala eDSL. It works without additional memory allocation. 
+Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
 
 Static rendering
 ----------------
@@ -11,7 +11,7 @@ You can use Levsha as a static HTML renderer.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.1.0"
+libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.1.1"
 ```
 
 ```scala
@@ -48,7 +48,8 @@ println(html)
 Static Rendering Benchmarks
 ---------------------------
 
-The benchmarks shows that Levsha is really fast. Unlike Twirl, Levsha's performance does not dependent on template complexity.
+The benchmarks shows that Levsha is really fast. Unlike Twirl, 
+Levsha's performance does not depends on template complexity.
 
 | Test                  | Engine        | Ops/s        |
 | --------------------- |:--------------| ------------:|
@@ -78,7 +79,7 @@ Levsha's memory usage is constant 64k.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.1.0"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.1.1"
 ```
 
 ```scala
@@ -137,7 +138,6 @@ val todos = Seq(
 )
 
 renderTodos(todos)
-
 ```
 
 Worthy to note

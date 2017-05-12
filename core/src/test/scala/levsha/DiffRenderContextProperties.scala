@@ -17,9 +17,10 @@ object DiffProperties extends Properties("Diff") {
       yield (a, b)
     Prop.forAll(gen) {
       case (a, b) =>
-        val performer = new DummyChangesPerformer()
+        val performer = DummyChangesPerformer
         val renderContext = DiffRenderContext[Nothing]()
         a(renderContext)
+        renderContext.diff(DummyChangesPerformer)
         renderContext.swap()
         b(renderContext)
         renderContext.diff(performer)
@@ -32,6 +33,7 @@ object DiffProperties extends Properties("Diff") {
       val performer = new DiffTestChangesPerformer()
       val renderContext = DiffRenderContext[Nothing]()
       trial.originalDocument(renderContext)
+      renderContext.diff(DummyChangesPerformer)
       renderContext.swap()
       trial.newDocument(renderContext)
       renderContext.diff(performer)

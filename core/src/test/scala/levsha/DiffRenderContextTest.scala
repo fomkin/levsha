@@ -1,6 +1,7 @@
 package levsha
 
 import levsha.impl.DiffRenderContext
+import levsha.impl.DiffRenderContext.DummyChangesPerformer
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -130,6 +131,7 @@ object DiffRenderContextTest extends utest.TestSuite {
     val performer = new DiffTestChangesPerformer()
     val renderContext = DiffRenderContext[Nothing]()
     original(renderContext)
+    renderContext.diff(DummyChangesPerformer)
     renderContext.swap()
     updated(renderContext)
     renderContext.diff(performer)

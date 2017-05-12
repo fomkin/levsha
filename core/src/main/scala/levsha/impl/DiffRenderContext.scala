@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets
 import levsha.{Id, IdBuilder, RenderContext}
 import levsha.RenderUnit.{Attr, Misc, Node, Text}
 import levsha.impl.DiffRenderContext._
+import levsha.impl.internal.Op._
 
 import scala.annotation.switch
 import internal.debox.IntStringMap
@@ -423,7 +424,7 @@ object DiffRenderContext {
     def create(id: Id, tag: String): Unit
   }
 
-  final class DummyChangesPerformer extends ChangesPerformer {
+  object DummyChangesPerformer extends ChangesPerformer {
     def removeAttr(id: Id, name: String): Unit = ()
     def remove(id: Id): Unit = ()
     def setAttr(id: Id, name: String, value: String): Unit = ()
@@ -432,12 +433,4 @@ object DiffRenderContext {
   }
 
   type MiscCallback[MiscType] = (Id, MiscType) => _
-
-  // Opcodes
-  final val OpOpen = 1
-  final val OpClose = 2
-  final val OpAttr = 3
-  final val OpText = 4
-  final val OpLastAttr = 5
-  final val OpEnd = 6
 }
