@@ -15,6 +15,12 @@ class TemplateDsl[MiscType] {
   /** Converts () to empty template */
   @inline implicit def unitToEmpty(value: Unit): RenderUnit = Empty
 
+  /** Converts symbol to attribute without value
+    * @example 'button('disabled, "Press me")
+    */
+  @inline implicit def symbolToAttr(s: Symbol)(implicit rc: RC): Attr.type =
+    macro TemplateDslMacro.enableAttr
+
   /** Converts String to text document node */
   @inline implicit def stringToText(value: String)(implicit rc: RC): Text.type =
     rc.addTextNode(value)

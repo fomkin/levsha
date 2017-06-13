@@ -23,12 +23,13 @@ object DiffRenderContextTest extends utest.TestSuite {
       val changes = runDiff(
         original = { implicit rc => "m" },
         updated = { implicit rc =>
-          'input('div('name /= "cow"))
+          'input('disabled, 'div('name /= "cow"))
         }
       )
       assert(
         changes == Seq(
           create("1", "input"),
+          setAttr("1", "disabled", ""),
           create("1_1", "div"),
           setAttr("1_1", "name", "cow")
         )

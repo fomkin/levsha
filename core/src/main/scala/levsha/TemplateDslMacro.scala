@@ -29,6 +29,11 @@ import macrocompat.bundle
     q"$rc.setAttr($attr, $value)"
   }
 
+  def enableAttr(s: Tree)(rc: Tree): Tree = {
+    val attr = toKebab(s)
+    q"""$rc.setAttr($attr, "")"""
+  }
+
   def toKebab(tree: Tree): String = tree match {
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
     case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
