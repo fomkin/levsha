@@ -4,7 +4,6 @@ import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
 import levsha.{Id, IdBuilder, RenderContext}
-import levsha.RenderUnit.{Attr, Misc, Node, Text}
 import levsha.impl.DiffRenderContext._
 import levsha.impl.internal.Op._
 
@@ -78,38 +77,34 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
     idents.update(name.hashCode, name)
   }
 
-  def closeNode(name: String): Node.type = {
+  def closeNode(name: String): Unit = {
     closeAttrs()
     idb.decLevel()
     lhs.put(OpClose.toByte)
-    Node
   }
 
-  def setAttr(name: String, value: String): Attr.type = {
+  def setAttr(name: String, value: String): Unit = {
     val bytes = value.getBytes(StandardCharsets.UTF_8)
     idents.update(name.hashCode, name)
     lhs.put(OpAttr.toByte)
     lhs.putInt(name.hashCode)
     lhs.putShort(bytes.length.toShort)
     lhs.put(bytes)
-    Attr
   }
 
-  def addTextNode(text: String): Text.type = {
+  def addTextNode(text: String): Unit = {
     val bytes = text.getBytes(StandardCharsets.UTF_8)
     closeAttrs()
     idb.incId()
     lhs.put(OpText.toByte)
     lhs.putShort(bytes.length.toShort)
     lhs.put(bytes)
-    Text
   }
 
-  def addMisc(misc: M): Misc = {
+  def addMisc(misc: M): Unit = {
     idb.decLevelTmp()
     mc(idb.mkId, misc)
     idb.incLevel()
-    Misc
   }
 
   /** Swap buffers */

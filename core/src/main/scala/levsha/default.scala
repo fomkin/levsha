@@ -15,12 +15,12 @@ object default {
     * Provides Text render context to make html string
     * @example
     * {{{
-    * val html = renderHtml { implicit rc =>
+    * val html = renderHtml {
     *   'div('class /= "title", "Hello, I'm Levsha!")
     * }
     * }}}
     */
-  def renderHtml(f: RenderContext[Nothing] => RenderUnit.Node): String = {
+  def renderHtml(f: RenderUnit.Node[RenderContext[Nothing]]): String = {
     val renderContext = new TextRenderContext()
     f(renderContext)
     renderContext.mkString

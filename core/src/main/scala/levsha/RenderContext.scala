@@ -7,8 +7,8 @@ import RenderUnit._
   */
 trait RenderContext[-MiscType] {
   def openNode(name: String): Unit
-  def closeNode(name: String): Node
-  def setAttr(name: String, value: String): Attr
-  def addTextNode(text: String): Text
-  def addMisc(misc: MiscType): Misc
+  def closeNode(name: String): Unit
+  def setAttr(name: String, value: String): Unit
+  def addTextNode(text: String): Unit
+  def addMisc(misc: MiscType): Unit
 }

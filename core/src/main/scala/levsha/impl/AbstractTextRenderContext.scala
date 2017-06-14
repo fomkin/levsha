@@ -1,7 +1,6 @@
 package levsha.impl
 
 import levsha.RenderContext
-import levsha.RenderUnit.{Attr, Misc, Node, Text}
 import levsha.impl.internal.Op._
 
 /**
@@ -10,27 +9,31 @@ import levsha.impl.internal.Op._
   */
 abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscType] {
 
-  private val builder = StringBuilder.newBuilder
   private var lastOp = OpClose
 
+  val builder = StringBuilder.newBuilder
+
   def openNode(name: String): Unit = {
-    if (lastOp != OpClose) builder.append('>')
+    if (lastOp != OpClose && lastOp != OpText) builder.append('>')
     builder.append('<')
     builder.append(name)
     lastOp = OpOpen
   }
 
-  def closeNode(name: String): Node.type = {
-    if (lastOp == OpAttr) builder.append('>')
-    builder.append('<')
-    builder.append('/')
-    builder.append(name)
-    builder.append('>')
+  def closeNode(name: String): Unit = {
+    if (lastOp == OpAttr || lastOp == OpOpen) {
+      builder.append('/')
+      builder.append('>')
+    } else {
+      builder.append('<')
+      builder.append('/')
+      builder.append(name)
+      builder.append('>')
+    }
     lastOp = OpClose
-    Node
   }
 
-  def setAttr(name: String, value: String): Attr.type = {
+  def setAttr(name: String, value: String): Unit = {
     builder.append(' ')
     builder.append(name)
     builder.append('=')
@@ -38,17 +41,15 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     builder.append(value)
     builder.append('"')
     lastOp = OpAttr
-    Attr
   }
 
-  def addTextNode(text: String): Text.type = {
-    if (lastOp != OpClose) builder.append('>')
+  def addTextNode(text: String): Unit = {
+    if (lastOp != OpClose && lastOp != OpText) builder.append('>')
     builder.append(text)
     lastOp = OpText
-    Text
   }
 
-  def addMisc(misc: MiscType): Misc.type = Misc
+  def addMisc(misc: MiscType): Unit = {}
 
   /** Creates string from buffer */
   def mkString: String = builder.mkString
