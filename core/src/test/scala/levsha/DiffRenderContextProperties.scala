@@ -10,7 +10,7 @@ import org.scalacheck.{Gen, Properties, _}
   */
 object DiffProperties extends Properties("Diff") {
 
-  import Document._
+  import TestDoc._
 
   property("doesn't fail on arbitrary trees") = {
     val gen = for (a <- genDocument; b <- genDocument)
@@ -49,10 +49,10 @@ object DiffProperties extends Properties("Diff") {
 
 }
 
-sealed trait Document {
+sealed trait TestDoc {
   def apply(rc: RenderContext[Nothing]): Unit = this match {
-    case Document.Text(text) => rc.addTextNode(text)
-    case Document.Element(name, attrs, xs) =>
+    case TestDoc.Text(text) => rc.addTextNode(text)
+    case TestDoc.Element(name, attrs, xs) =>
       rc.openNode(name)
       attrs foreach {
         case (attr, value) =>
@@ -62,25 +62,25 @@ sealed trait Document {
       rc.closeNode(name)
   }
   override def toString: String = {
-    Document.docToString("", this)
+    TestDoc.docToString("", this)
   }
 }
 
-object Document {
+object TestDoc {
 
-  case class Text(value: String) extends Document
-  case class Element(name: String, attrs: Map[String, String], xs: Seq[Document]) extends Document
+  case class Text(value: String) extends TestDoc
+  case class Element(name: String, attrs: Map[String, String], xs: Seq[TestDoc]) extends TestDoc
 
-  def docToString(level: String, doc: Document): String = {
+  def docToString(level: String, doc: TestDoc): String = {
     def attrsToString(attrs: Map[String, String]) =
       attrs
         .map { case (name, value) => s"""'$name /= "$value"""" }
         .mkString(",")
     doc match {
-      case Document.Text(value) => s"""$level"$value""""
-      case Document.Element(name, attrs, Nil) =>
+      case TestDoc.Text(value) => s"""$level"$value""""
+      case TestDoc.Element(name, attrs, Nil) =>
         s"$level'$name(${attrsToString(attrs)})"
-      case Document.Element(name, attrs, xs) =>
+      case TestDoc.Element(name, attrs, xs) =>
         val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
         val sep = if (attrs.isEmpty) "" else ","
         s"$level'$name(${attrsToString(attrs)}$sep\n$children\n$level)"
@@ -140,7 +140,7 @@ object Document {
     }
   }
 
-  def genDocument: Gen[Document] = Gen.lzy {
+  def genDocument: Gen[TestDoc] = Gen.lzy {
     Gen.frequency(
       2 -> genText,
       5 -> genElement
@@ -149,11 +149,11 @@ object Document {
 }
 
 case class ChangesTrial(
-    originalDocument: Document,
-    newDocument: Document,
+    originalDocument: TestDoc,
+    newDocument: TestDoc,
     changes: Seq[Change]
 ) {
-  import Document._
+  import TestDoc._
   override def toString: String = {
     s"""Changes Trial
        |-------------
@@ -168,11 +168,11 @@ case class ChangesTrial(
 
 object ChangesTrial {
 
-  import Document._
+  import TestDoc._
 
-  type FlatDoc = List[(List[Int], Document)]
+  type FlatDoc = List[(List[Int], TestDoc)]
 
-  private def makeFlat(id: List[Int], d: Document): FlatDoc = d match {
+  private def makeFlat(id: List[Int], d: TestDoc): FlatDoc = d match {
     case t: Text => List(id -> t)
     case el: Element =>
       (id, el.copy(xs = Nil)) :: {
@@ -185,7 +185,7 @@ object ChangesTrial {
 
   private def makeUnflat(flatDoc: FlatDoc) = {
     val (1 :: Nil, root) :: children = flatDoc.sortBy(_._1.toIterable)
-    def findChildren(id: List[Int]): List[Document] = {
+    def findChildren(id: List[Int]): List[TestDoc] = {
       def checkId(childId: List[Int]) =
         childId.length == (id.length + 1) && childId.startsWith(id)
       children collect {
@@ -207,20 +207,20 @@ object ChangesTrial {
 
     case class SetAttr(id: List[Int], attr: String, value: String) extends Intent
     case class RemoveAttr(id: List[Int], attr: String) extends Intent
-    case class Append(id: List[Int], doc: Document) extends Intent
+    case class Append(id: List[Int], doc: TestDoc) extends Intent
     case class Delete(id: List[Int]) extends Intent
-    case class Replace(id: List[Int], doc: Document) extends Intent
+    case class Replace(id: List[Int], doc: TestDoc) extends Intent
 
-    def genSetAttrIntent(id: List[Int]): Gen[SetAttr] = Document.genAttr map {
+    def genSetAttrIntent(id: List[Int]): Gen[SetAttr] = TestDoc.genAttr map {
       case (attr, value) => SetAttr(id, attr, value)
     }
-    def genRemoveAttrIntent(id: List[Int]): Gen[RemoveAttr] = Document.genAttr map {
+    def genRemoveAttrIntent(id: List[Int]): Gen[RemoveAttr] = TestDoc.genAttr map {
       case (attr, _) => RemoveAttr(id, attr)
     }
-    def genAppendIntent(id: List[Int]): Gen[Append] = Document.genDocument map { doc =>
+    def genAppendIntent(id: List[Int]): Gen[Append] = TestDoc.genDocument map { doc =>
       Append(id, doc)
     }
-    def genReplaceIntent(id: List[Int]): Gen[Replace] = Document.genDocument map { doc =>
+    def genReplaceIntent(id: List[Int]): Gen[Replace] = TestDoc.genDocument map { doc =>
       Replace(id, doc)
     }
     def genDeleteIntent(id: List[Int]): Gen[Delete] = Gen.const { Delete(id) }
@@ -262,7 +262,7 @@ object ChangesTrial {
   }
 
   val genChangesTrial = {
-    def flatDocToChanges(doc: (List[Int], Document)) = doc match {
+    def flatDocToChanges(doc: (List[Int], TestDoc)) = doc match {
       case (id, Text(value)) => List(Change.createText(id, value))
       case (id, Element(name, attrs, _)) =>
         Change.create(id, name) :: attrs.toList.map {

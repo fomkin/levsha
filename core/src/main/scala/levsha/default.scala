@@ -20,7 +20,7 @@ object default {
     * }
     * }}}
     */
-  def renderHtml(f: RenderUnit.Node[RenderContext[Nothing]]): String = {
+  def renderHtml(f: Document.Node[Nothing]): String = {
     val renderContext = new TextRenderContext()
     f(renderContext)
     renderContext.mkString

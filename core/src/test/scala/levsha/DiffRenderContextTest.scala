@@ -128,7 +128,7 @@ object DiffRenderContextTest extends utest.TestSuite {
 
   // -----------------------
 
-  def runDiff(original: RenderContext[Nothing] => RenderUnit, updated: RenderContext[Nothing] => RenderUnit): Seq[Change] = {
+  def runDiff(original: RenderContext[Nothing] => Document, updated: RenderContext[Nothing] => Document): Seq[Change] = {
     val performer = new DiffTestChangesPerformer()
     val renderContext = DiffRenderContext[Nothing]()
     original(renderContext)

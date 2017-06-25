@@ -1,7 +1,6 @@
 package levsha.benchmark
 
 import levsha.impl.DiffRenderContext
-import levsha.impl.DiffRenderContext.DummyChangesPerformer
 import org.openjdk.jmh.annotations.Benchmark
 
 import levsha.default.dsl._
@@ -436,6 +435,6 @@ class DiffRenderContextBenchmark {
       )
     )
 
-    renderContext.diff(new DummyChangesPerformer())
+    renderContext.diff(DiffRenderContext.DummyChangesPerformer)
   }
 }

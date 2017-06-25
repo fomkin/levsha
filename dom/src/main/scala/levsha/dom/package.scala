@@ -56,7 +56,7 @@ package object dom {
 
   val dsl = new TemplateDsl[Misc]
 
-  def render(target: Element)(f: RenderContext[Misc] => RenderUnit): Unit = {
+  def render(target: Element)(f: RenderContext[Misc] => Document): Unit = {
     val root = roots.getOrElseUpdate(target, new Root(target))
     f(root.renderContext)
     root.saveEvents()
