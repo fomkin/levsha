@@ -42,12 +42,13 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  version := "0.2.0",
+  version := "0.3.0",
   scalaVersion := "2.12.2", // Need by IntelliJ
   scalacOptions ++= Seq(
     "-deprecation",
-    "-feature",
-    "-Xfatal-warnings"
+    "-feature"
+//    ,
+//    "-Xfatal-warnings"
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(

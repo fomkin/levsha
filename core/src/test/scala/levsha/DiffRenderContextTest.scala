@@ -21,10 +21,8 @@ object DiffRenderContextTest extends utest.TestSuite {
 
     "should replace text to node" - {
       val changes = runDiff(
-        original = { implicit rc => "m" },
-        updated = { implicit rc =>
-          'input('disabled, 'div('name /= "cow"))
-        }
+        original = "m",
+        updated = 'input('disabled /= "", 'div('name /= "cow"))
       )
       assert(
         changes == Seq(
@@ -38,7 +36,7 @@ object DiffRenderContextTest extends utest.TestSuite {
 
     "should text to node with chidlren" - {
       val changes = runDiff(
-        original = { implicit rc =>
+        original = {
           'div('class /= "world",
             'input('class /= "world",'lang /= "ru",
               "j"
@@ -55,7 +53,7 @@ object DiffRenderContextTest extends utest.TestSuite {
             'p('class /= "world")
           )
         },
-        updated = { implicit rc =>
+        updated = {
           'div('class /= "world",
             'input('class /= "world",'lang /= "ru",
               "j"
@@ -84,15 +82,15 @@ object DiffRenderContextTest extends utest.TestSuite {
 
     "should remove attribute" - {
       val changes = runDiff(
-        original = { implicit rc => 'span('class /= "world",'style /= "margin: 10;", "q") },
-        updated = { implicit rc =>'span('style /= "margin: 10;", "q") }
+        original = { 'span('class /= "world",'style /= "margin: 10;", "q") },
+        updated = { 'span('style /= "margin: 10;", "q") }
       )
       assert(changes == Seq(removeAttr("1", "class")))
     }
     
     "should remove only subroot, not entire tree" - {
       val changes = runDiff(
-        original = { implicit rc =>
+        original = {
           'div('class /= "world",
             'div('class /= "world"),
             'div('class /= "hello",
@@ -109,7 +107,7 @@ object DiffRenderContextTest extends utest.TestSuite {
             "dasd"
           )
         },
-        updated = { implicit rc =>
+        updated = {
           'div('class /= "world",
             'div('class /= "world"),
             "gGi"
@@ -128,7 +126,7 @@ object DiffRenderContextTest extends utest.TestSuite {
 
   // -----------------------
 
-  def runDiff(original: RenderContext[Nothing] => Document, updated: RenderContext[Nothing] => Document): Seq[Change] = {
+  def runDiff(original: Document[Nothing], updated: Document[Nothing]): Seq[Change] = {
     val performer = new DiffTestChangesPerformer()
     val renderContext = DiffRenderContext[Nothing]()
     original(renderContext)

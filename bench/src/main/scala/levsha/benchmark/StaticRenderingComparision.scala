@@ -29,11 +29,11 @@ object StaticRenderingComparision {
     "levsha" -> new TemplateEngine {
 
       import sharedContent._
-      import levsha.default.dsl._
-      import levsha.default.renderHtml
+      import levsha.text.symbolDsl._
+      import levsha.text.renderHtml
 
       def simpleHtml(): Unit = {
-        renderHtml { implicit rc =>
+        renderHtml {
           'body(
             'div('class /= "title", "Hello, I'm Cow!"),
             'ul('class /= "list",
@@ -47,7 +47,7 @@ object StaticRenderingComparision {
         }
       }
       def withVariables(): Unit = {
-        renderHtml { implicit rc =>
+        renderHtml {
           'body(
             'div('class /= "title", greeting),
             'ul('class /= className,
@@ -61,7 +61,7 @@ object StaticRenderingComparision {
         }
       }
       def withConditionAndLoop(): Unit = {
-        renderHtml { implicit rc =>
+        renderHtml {
           'body(
             'div('class /= "title",
               if (condition) leftBranch

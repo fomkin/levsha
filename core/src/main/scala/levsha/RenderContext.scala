@@ -1,7 +1,5 @@
 package levsha
 
-import Document._
-
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */

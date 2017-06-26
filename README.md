@@ -11,17 +11,17 @@ You can use Levsha as a static HTML renderer.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.2.0"
+libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.3.0"
 ```
 
 ```scala
 // In your code
-import levsha.default.dsl._
-import levsha.default.renderHtml
+import levsha.text.symbolDsl._
+import levsha.text.renderHtml
 
 val features = Seq("Very fast", "Memory-effective")
 
-val html = renderHtml { implicit rc =>
+val html = renderHtml {
   'body(
     'div('class /= "title", "Hello, I'm Levsha!"),
     'ul('class /= "list",
@@ -79,19 +79,19 @@ Levsha's memory usage is constant 64k.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.2.0"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.3.0"
 ```
 
 ```scala
 // In your code
 import org.scalajs.dom._
-import levsha.dom.dsl._
+import levsha.dom.symbolDsl._
 import levsha.dom.render
 import levsha.dom.event
 
 case class Todo(id: String, text: String, done: Boolean)
 
-def renderTodos(todos: Seq[Todo]): Unit = render(document.body) { implicit rc =>
+def renderTodos(todos: Seq[Todo]): Unit = render(document.body) {
   'body(
     'div('class /= "title", "Todos"),
     'ul('class /= "list",

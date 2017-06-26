@@ -7,9 +7,9 @@ import levsha.impl.TextRenderContext
  *
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-object default {
+object text {
 
-  val dsl = new TemplateDsl[Nothing]()
+  val symbolDsl = new TemplateDsl[Nothing]()
 
   /**
     * Provides Text render context to make html string

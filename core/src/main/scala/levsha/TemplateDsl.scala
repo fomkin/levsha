@@ -37,7 +37,7 @@ class TemplateDsl[MiscType] {
   /** Symbol based DSL allows to define documents
     * {{{
     *   'body(
-    *     'h1(class /= "title")("Hello World"),
+    *     'h1(class /= "title", "Hello World"),
     *     'p("Lorem ipsum dolor")
     *   )
     * }}}

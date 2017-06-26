@@ -54,11 +54,11 @@ package object dom {
 
   private val roots = mutable.Map.empty[Element, Root]
 
-  val dsl = new TemplateDsl[Misc]
+  val symbolDsl = new TemplateDsl[Misc]
 
-  def render(target: Element)(f: RenderContext[Misc] => Document): Unit = {
+  def render(target: Element)(node: Document.Node[Misc]): Unit = {
     val root = roots.getOrElseUpdate(target, new Root(target))
-    f(root.renderContext)
+    node(root.renderContext)
     root.saveEvents()
     root.renderContext.diff(root.performer)
     root.renderContext.swap()

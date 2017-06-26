@@ -3,7 +3,7 @@ package levsha.benchmark
 import levsha.impl.DiffRenderContext
 import org.openjdk.jmh.annotations.Benchmark
 
-import levsha.default.dsl._
+import levsha.text.symbolDsl._
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
@@ -13,7 +13,7 @@ class DiffRenderContextBenchmark {
   @Benchmark def inferChangesBetweenTwoTrees(): Unit = {
     implicit val renderContext = DiffRenderContext()
 
-    'span('lang /= "en",'class /= "hello",
+    val a = 'span('lang /= "en",'class /= "hello",
       'div('name /= "I",
         'form('class /= "cow",'lang /= "ru",
           'div('lang /= "en",'style /= "margin: 10;")
@@ -81,9 +81,7 @@ class DiffRenderContextBenchmark {
       )
     )
 
-    renderContext.swap()
-
-    'span('lang /= "en",'class /= "hello",
+    val b = 'span('lang /= "en",'class /= "hello",
       'div('name /= "I",
         'form('class /= "cow",'lang /= "ru",
           'span(
@@ -435,6 +433,9 @@ class DiffRenderContextBenchmark {
       )
     )
 
+    a(renderContext)
+    renderContext.swap()
+    b(renderContext)
     renderContext.diff(DiffRenderContext.DummyChangesPerformer)
   }
 }
