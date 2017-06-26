@@ -46,9 +46,9 @@ val commonSettings = Seq(
   scalaVersion := "2.12.2", // Need by IntelliJ
   scalacOptions ++= Seq(
     "-deprecation",
-    "-feature"
-//    ,
-//    "-Xfatal-warnings"
+    "-feature",
+    "-Xfatal-warnings",
+    "-Xexperimental"
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
