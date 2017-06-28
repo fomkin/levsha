@@ -37,41 +37,26 @@ attr {
 
 */
 
-final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends RenderContext[M] {
+final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int) extends RenderContext[M] {
 
-  if ((bufferSize == 0) || ((bufferSize & (bufferSize - 1)) != 0))
-    throw new IllegalArgumentException("bufferSize should be power of two")
+  if ((initialBufferSize == 0) || ((initialBufferSize & (initialBufferSize - 1)) != 0))
+    throw new IllegalArgumentException("initialBufferSize should be power of two")
 
   private val idb = IdBuilder()
   private var attrsOpened = false
 
-  private val buffer = {
-    val buff = ByteBuffer.allocateDirect(bufferSize)
-    buff.order(ByteOrder.nativeOrder())
-  }
+  private var buffer: ByteBuffer = _
+  private var lhs: ByteBuffer = _
+  private var rhs: ByteBuffer = _
 
-  private var lhs = {
-    buffer.limit(bufferSize / 2)
-    buffer
-      .slice()
-      .order(ByteOrder.nativeOrder())
-  }
-
-  private var rhs = {
-    buffer.position(bufferSize / 2)
-    buffer.limit(buffer.capacity)
-    buffer
-      .slice()
-      .order(ByteOrder.nativeOrder())
-      .flip()
-      .asInstanceOf[ByteBuffer]
-  }
+  resizeBuffer(0)
 
   def openNode(name: String): Unit = {
     closeAttrs()
     attrsOpened = true
     idb.incId()
     idb.incLevel()
+    requestResize(OpOpenSize)
     lhs.put(OpOpen.toByte)
     lhs.putInt(name.hashCode)
     idents.update(name.hashCode, name)
@@ -80,12 +65,14 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   def closeNode(name: String): Unit = {
     closeAttrs()
     idb.decLevel()
+    requestResize(OpSize)
     lhs.put(OpClose.toByte)
   }
 
   def setAttr(name: String, value: String): Unit = {
     val bytes = value.getBytes(StandardCharsets.UTF_8)
     idents.update(name.hashCode, name)
+    requestResize(OpAttrSize + bytes.length * 2)
     lhs.put(OpAttr.toByte)
     lhs.putInt(name.hashCode)
     lhs.putShort(bytes.length.toShort)
@@ -96,6 +83,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
     val bytes = text.getBytes(StandardCharsets.UTF_8)
     closeAttrs()
     idb.incId()
+    requestResize(OpTextSize + bytes.length * 2)
     lhs.put(OpText.toByte)
     lhs.putShort(bytes.length.toShort)
     lhs.put(bytes)
@@ -188,6 +176,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
   private def closeAttrs(): Unit = {
     if (attrsOpened) {
       attrsOpened = false
+      requestResize(OpSize)
       lhs.put(OpLastAttr.toByte)
     }
   }
@@ -398,17 +387,70 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], bufferSize: Int) extends 
       equals
     }
   }
+
+  /* Check write to lhs is available */
+  private def requestResize(additionalSize: Int) = {
+    if (additionalSize > lhs.remaining)
+      resizeBuffer(additionalSize)
+  }
+
+  private def resizeBuffer(additionalSize: Int) = {
+
+    val oldSize =
+      if (buffer != null) buffer.capacity
+      else -1
+
+    val newSize = {
+      if (oldSize > 0) {
+        val totalAdditionalSize = oldSize + additionalSize
+        var size = oldSize
+        while (size < totalAdditionalSize) size = size * 2
+        size
+      }
+      else {
+        // Ignore additional size
+        initialBufferSize
+      }
+    }
+
+    buffer = ByteBuffer.allocateDirect(newSize)
+    buffer.order(ByteOrder.nativeOrder())
+
+    lhs = {
+      buffer.limit(newSize / 2)
+      val buff = buffer.slice().order(ByteOrder.nativeOrder())
+      if (lhs != null) {
+        lhs.flip()
+        buff.put(lhs)
+      }
+      buff
+    }
+
+    rhs = {
+      buffer.position(newSize / 2)
+      buffer.limit(buffer.capacity)
+      val buff = buffer.slice().order(ByteOrder.nativeOrder())
+      if (rhs != null) {
+        rhs.position(0)
+        buff.put(rhs)
+      }
+      buff.flip()
+      buff
+    }
+  }
 }
 
 object DiffRenderContext {
 
   private[impl] val idents = IntStringMap.ofSize(100)
 
+  final val DefaultDiffRenderContextBufferSize = 1024 * 32
+
   def apply[MiscType](
     onMisc: MiscCallback[MiscType] = (_: Id, _: MiscType) => (),
-    bufferSize: Int = 1024 * 64
+    initialBufferSize: Int = DefaultDiffRenderContextBufferSize
   ): DiffRenderContext[MiscType] = {
-    new DiffRenderContext[MiscType](onMisc, bufferSize)
+    new DiffRenderContext[MiscType](onMisc, initialBufferSize)
   }
 
   trait ChangesPerformer {
