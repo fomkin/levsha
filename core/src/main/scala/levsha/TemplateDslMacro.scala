@@ -1,8 +1,12 @@
 package levsha
 
+import java.util.UUID
+
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 import macrocompat.bundle
+
+import scala.collection.concurrent.TrieMap
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
@@ -11,63 +15,78 @@ import macrocompat.bundle
 
   import c.universe._
 
+  import TemplateDslMacroHelper.Op
+  import Op._
+
   def node[MT: WeakTypeTag](children: Tree*): Tree = {
 
-    // 1. Moves nested templates to current scope
-    // 2. Simplifies implicit wrappers (stringToNode, miscToNode)
-    def transformContent(content: Tree): Seq[Tree] = content match {
-      case Apply(Select(_, TermName("stringToNode")), value :: Nil) => Seq(q"rc.addTextNode($value)")
-      case Apply(Select(_, TermName("miscToNode")), value :: Nil) => Seq(q"rc.addMisc($value)")
-      case Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $v) }", _) => Seq(q"rc.setAttr($k, $v)")
-      case Typed(q"levsha.Document.Node.apply[$t] { rc => ..$ops }", _) =>
-        // Partial workaround for situation
-        // https://stackoverflow.com/questions/11208790/how-can-i-reuse-definition-ast-subtrees-in-a-macro
-        ops flatMap {
-          case q"rc.openNode($name)" => Seq(q"rc.openNode($name)")
-          case q"rc.closeNode($name)" => Seq(q"rc.closeNode($name)")
-          case q"rc.setAttr($name, $value)" => Seq(q"rc.setAttr($name, $value)")
-          case q"rc.addTextNode($text)" => Seq(q"rc.addTextNode($text)")
-          case q"rc.addMisc($misc)" => Seq(q"rc.addMisc($misc)")
-          case q"($expr).apply($rc)" => Seq(q"($expr).apply(rc)")
-          case op if op.tpe <:< weakTypeOf[Document[MT]] => transformContent(op)
-        }
-      case tree if tree.tpe <:< weakTypeOf[Document[MT]] => Seq(q"($tree).apply(rc)")
-    }
-
-    // Check one of children has ambiguous Document type
-    // Children should be Attr, Node or Empty
-    val trees = children map { child =>
-      // I've encountered with strange behavior in macros.
-      // When I give if expression to def macro,
-      // 1) Macro invokes twice
-      // 2) On first invoke if expression has
-      //    unexpected type: if (true) A(1) else A(2) has type X[Int] but I expect A[Int]
-      //    where sealed trait X[-T]; case class A[-T](v: T) extends X[T].
-      // Reproduced in 2.11.11 and 2.12.2
-      // Hope https://issues.scala-lang.org/browse/SI-5464 will not touch this
-      val tree = c.typecheck(c.untypecheck(child))
-      if (tree.tpe =:= weakTypeOf[Document[MT]])
-        c.error(tree.pos, "Should be node, attribute or void")
-      tree
-    }
+    // Hack. We need to exchange trees between different
+    // macro expansion.
+    val savedOps = TemplateDslMacroHelper.savedOps
+      .asInstanceOf[TrieMap[String, Seq[Op[Tree]]]]
 
     val MT = weakTypeOf[MT]
     val q"$conv($in)" = c.prefix.tree
     val nodeName = toKebab(in)
+    val id = UUID.randomUUID.toString
 
-    val preparedChildren = trees
-      // Attributes always on top
-      .sortBy(_.tpe) { (x, y) =>
-        if (x =:= weakTypeOf[Document.Attr[MT]]) -1
-        else 0
-      }
-      .flatMap(transformContent)
+    val ops = {
+      val innerOps = children
+        // Check one of children has ambiguous Document type
+        // Children should be Attr, Node or Empty
+        .map { child =>
+          // I've encountered with strange behavior in macros.
+          // When I give if expression to def macro,
+          // 1) Macro invokes twice
+          // 2) On first invoke if expression has
+          //    unexpected type: if (true) A(1) else A(2) has type X[Int] but I expect A[Int]
+          //    where sealed trait X[-T]; case class A[-T](v: T) extends X[T].
+          // Reproduced in 2.11.11 and 2.12.2
+          // Hope https://issues.scala-lang.org/browse/SI-5464 will not touch this
+          val utc = c.untypecheck(child)
+          val tc = c.typecheck(utc)
+          if (tc.tpe =:= weakTypeOf[Document[MT]])
+            c.error(tc.pos, "Should be node, attribute or void")
+          // Save both untypechecked tree and typechecked tree.
+          // Untypechecked tree can be saved for future use
+          // Typechecked tree will be used right no to decide
+          // how not transform the tree.
+          (utc, tc)
+        }
+        // Attributes always on top
+        .sortBy(_._2.tpe) { (x, y) =>
+          if (x =:= weakTypeOf[Document.Attr[MT]]) -1
+          else 0
+        }
+        .flatMap {
+          case (Apply(Select(_, TermName("stringToNode")), value :: Nil), _) => Seq(addTextNode(value))
+          case (Apply(Select(_, TermName("miscToNode")), value :: Nil), _) => Seq(addMisc(value))
+          case (Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $v) }", _), _) => Seq(setAttr(k, v))
+          case (Typed(q"levsha.Document.Node.apply[$t] { rc => ..$ops }", _), _) =>
+            val q"levsha.TemplateDslMacroHelper.id(${id: String})" :: _ = ops
+            savedOps.remove(id).getOrElse(
+              c.abort(c.enclosingPosition, s"Unexpected macro expansion order. $id not found"))
+          case (utc, tc) if tc.tpe <:< weakTypeOf[Document[MT]] =>
+            Seq(applyRc(utc))
+        }
+      openNode(nodeName) +: innerOps :+ closeNode(nodeName)
+    }
+
+    val opsCode = ops map {
+      case openNode(name) => q"rc.openNode($name)"
+      case closeNode(name) => q"rc.closeNode($name)"
+      case setAttr(k, v) => q"rc.setAttr($k, $v)"
+      case addTextNode(text) => q"rc.addTextNode($text)"
+      case addMisc(misc) => q"rc.addMisc($misc)"
+      case applyRc(tree) => q"(${tree.duplicate}).apply(rc)"
+    }
+
+    savedOps.put(id, ops)
 
     q"""
       levsha.Document.Node.apply[$MT] { rc =>
-        rc.openNode($nodeName)
-        ..$preparedChildren
-        rc.closeNode($nodeName)
+        levsha.TemplateDslMacroHelper.id($id)
+        ..$opsCode
       }
     """
   }
@@ -88,5 +107,26 @@ import macrocompat.bundle
   private def toKebab(tree: Tree): String = tree match {
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
     case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
+  }
+}
+
+object TemplateDslMacroHelper {
+
+  // This method used by node simplifier macro.
+  def id(x: String): Unit = ()
+
+  // Cache of operations corresponding to node.
+  // Trees should be untypechecked
+  lazy val savedOps = TrieMap.empty[String, Seq[Op[_]]]
+
+  sealed trait Op[+Tree]
+
+  object Op {
+    case class openNode(name: String) extends Op[Nothing]
+    case class closeNode(name: String) extends Op[Nothing]
+    case class setAttr[Tree](name: Tree, value: Tree) extends Op[Tree]
+    case class addTextNode[Tree](text: Tree) extends Op[Tree]
+    case class addMisc[Tree](misc: Tree) extends Op[Tree]
+    case class applyRc[Tree](tree: Tree) extends Op[Tree]
   }
 }
