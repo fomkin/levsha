@@ -127,6 +127,7 @@ object TemplateDslMacroHelper {
     case class setAttr[Tree](name: Tree, value: Tree) extends Op[Tree]
     case class addTextNode[Tree](text: Tree) extends Op[Tree]
     case class addMisc[Tree](misc: Tree) extends Op[Tree]
+
     case class applyRc[Tree](tree: Tree) extends Op[Tree]
   }
 }
