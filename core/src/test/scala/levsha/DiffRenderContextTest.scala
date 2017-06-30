@@ -122,6 +122,22 @@ object DiffRenderContextTest extends utest.TestSuite {
         )
       }
     }
+
+    "should save and restore state" - {
+      val original = 'span('class /= "world",'style /= "margin: 10;", "q")
+      val updated = 'span('style /= "margin: 10;", "q")
+      val performer = new DiffTestChangesPerformer()
+      val renderContext1 = DiffRenderContext[Nothing]()
+      original(renderContext1)
+      renderContext1.diff(DummyChangesPerformer)
+      renderContext1.swap()
+      val buffer = renderContext1.save()
+      val renderContext2 = DiffRenderContext[Nothing](savedBuffer = Some(buffer))
+      updated(renderContext2)
+      renderContext2.diff(performer)
+      val changes = performer.result
+      assert(changes == Seq(removeAttr("1", "class")))
+    }
   }
 
   // -----------------------

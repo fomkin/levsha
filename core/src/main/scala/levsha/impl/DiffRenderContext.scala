@@ -37,7 +37,8 @@ attr {
 
 */
 
-final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int) extends RenderContext[M] {
+final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, savedBuffer: ByteBuffer)
+  extends RenderContext[M] {
 
   if ((initialBufferSize == 0) || ((initialBufferSize & (initialBufferSize - 1)) != 0))
     throw new IllegalArgumentException("initialBufferSize should be power of two")
@@ -49,7 +50,31 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int) e
   private var lhs: ByteBuffer = _
   private var rhs: ByteBuffer = _
 
-  resizeBuffer(0)
+  // Restore saved buffer if it exists
+  if (savedBuffer != null) {
+    savedBuffer.clear()
+    val lhsPos = savedBuffer.getInt
+    val lhsLimit = savedBuffer.getInt
+    val rhsPos = savedBuffer.getInt
+    val rhsLimit = savedBuffer.getInt
+    buffer = ByteBuffer.allocateDirect(savedBuffer.capacity - 16)
+    buffer.put(savedBuffer)
+    buffer.clear()
+    // Restore lhs and rhs
+    buffer.limit(buffer.capacity / 2)
+    lhs = buffer.slice()
+    lhs.position(lhsPos)
+    lhs.limit(lhsLimit)
+    lhs.order(ByteOrder.nativeOrder())
+    buffer.position(buffer.capacity / 2)
+    buffer.limit(buffer.capacity)
+    rhs = buffer.slice()
+    rhs.order(ByteOrder.nativeOrder())
+    rhs.position(rhsPos)
+    rhs.limit(rhsLimit)
+  } else {
+    resizeBuffer(0)
+  }
 
   def openNode(name: String): Unit = {
     closeAttrs()
@@ -110,6 +135,20 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int) e
     while (lhs.hasRemaining)
       lhs.put(0.toByte)
     lhs.clear()
+  }
+
+  def save(): ByteBuffer = {
+    // capacity + 4 + 4 where 4 sizes of lhs and rhs
+    val buff = ByteBuffer.allocate(buffer.capacity() + 16)
+    buffer.clear()
+    buff.putInt(lhs.position)
+    buff.putInt(lhs.limit)
+    buff.putInt(rhs.position)
+    buff.putInt(rhs.limit)
+    buff.put(lhs)
+    buff.put(rhs)
+    buff.clear()
+    buff
   }
 
   def diff(performer: ChangesPerformer): Unit = {
@@ -448,9 +487,10 @@ object DiffRenderContext {
 
   def apply[MiscType](
     onMisc: MiscCallback[MiscType] = (_: Id, _: MiscType) => (),
-    initialBufferSize: Int = DefaultDiffRenderContextBufferSize
+    initialBufferSize: Int = DefaultDiffRenderContextBufferSize,
+    savedBuffer: Option[ByteBuffer] = None
   ): DiffRenderContext[MiscType] = {
-    new DiffRenderContext[MiscType](onMisc, initialBufferSize)
+    new DiffRenderContext[MiscType](onMisc, initialBufferSize, savedBuffer.orNull)
   }
 
   trait ChangesPerformer {
