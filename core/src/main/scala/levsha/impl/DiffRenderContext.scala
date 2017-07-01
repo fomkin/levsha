@@ -140,14 +140,18 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   def save(): ByteBuffer = {
     // capacity + 4 + 4 where 4 sizes of lhs and rhs
     val buff = ByteBuffer.allocate(buffer.capacity() + 16)
-    buffer.clear()
-    buff.putInt(lhs.position)
+    val lhsPos = lhs.position
+    val rhsPos = rhs.position
+    buff.putInt(lhsPos)
     buff.putInt(lhs.limit)
-    buff.putInt(rhs.position)
+    buff.putInt(rhsPos)
     buff.putInt(rhs.limit)
     buff.put(lhs)
     buff.put(rhs)
     buff.clear()
+    // Restore positions
+    lhs.position(lhsPos)
+    rhs.position(rhsPos)
     buff
   }
 
