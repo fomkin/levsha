@@ -1,0 +1,30 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.code {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  font-family: 'Fira Mono', monospace;
+  font-size: 11pt;
+  padding: 1em;
+  overflow: scroll;
+}
+
+.left {
+  border: none;
+  overflow: auto;
+  outline: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  left: 0;
+}
+
+.right {
+  right: 0;
+}
+
