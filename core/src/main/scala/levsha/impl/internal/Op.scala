@@ -15,6 +15,6 @@ private[levsha] object Op {
   final val OpSize = 1
 
   final val OpOpenSize = 5
-  final val OpAttrSize = 7
-  final val OpTextSize = 3
+  final val OpAttrSize = 9
+  final val OpTextSize = 5
 }

@@ -100,7 +100,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     requestResize(OpAttrSize + bytes.length * 2)
     lhs.put(OpAttr.toByte)
     lhs.putInt(name.hashCode)
-    lhs.putShort(bytes.length.toShort)
+    lhs.putInt(bytes.length)
     lhs.put(bytes)
   }
 
@@ -110,7 +110,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     idb.incId()
     requestResize(OpTextSize + bytes.length * 2)
     lhs.put(OpText.toByte)
-    lhs.putShort(bytes.length.toShort)
+    lhs.putInt(bytes.length)
     lhs.put(bytes)
   }
 
@@ -234,12 +234,12 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   }
 
   private def skipText(x: ByteBuffer): Unit = {
-    val len = x.getShort()
+    val len = x.getInt()
     x.position(x.position + len)
   }
 
   private def readText(x: ByteBuffer): String = {
-    val len = x.getShort()
+    val len = x.getInt()
     readText(x, len)
   }
 
@@ -251,7 +251,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
   private def skipAttr(x: ByteBuffer): Unit = {
     x.getInt()
-    val len = x.getShort()
+    val len = x.getInt()
     x.position(x.position + len)
   }
 
@@ -374,13 +374,13 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     lhs.position(startPosA)
     while (checkAttr(lhs)) {
       val nameA = readAttrRaw(lhs)
-      val valueLenA = lhs.getShort()
+      val valueLenA = lhs.getInt()
       val valuePosA = lhs.position()
       var needToSet = true
       rhs.position(startPosB)
       while (needToSet && checkAttr(rhs)) {
         val nameB = readAttrRaw(rhs)
-        val valueLenB = rhs.getShort()
+        val valueLenB = rhs.getInt()
         val valuePosB = rhs.position()
         // First condition: name of attributes should be equals
         if (nameA == nameB) {
@@ -411,8 +411,8 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   private def compareTexts(): Boolean = {
     val startPosA = lhs.position()
     val startPosB = rhs.position()
-    val aLen = lhs.getShort()
-    val bLen = rhs.getShort()
+    val aLen = lhs.getInt()
+    val bLen = rhs.getInt()
     if (aLen != bLen) {
       lhs.position(startPosA)
       rhs.position(startPosB)
