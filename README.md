@@ -48,8 +48,8 @@ println(html)
 Static Rendering Benchmarks
 ---------------------------
 
-The benchmarks shows that Levsha is really fast. Unlike Twirl, 
-Levsha's performance does not depends on template complexity.
+Benchmarks show that Levsha is really fast. Unlike Twirl, 
+Levsha's performance does not depend on template complexity.
 
 | Test                  | Engine        | Ops/s        |
 | --------------------- |:--------------| ------------:|
@@ -72,9 +72,9 @@ bench/jmh:run .StaticRenderingComparision
 As a virtual DOM
 ----------------
 
-Levsha can be used as virtual-dom-like middleware. Unlike other popular 
+Levsha can be used as virtual-DOM-like middleware. Unlike other popular 
 virtual DOM solutions, Levsha doesn't allocate additional memory for construction
-new virtual DOM copy. Also it does not allocate memory in changes inferring phase.
+of a new virtual DOM copy. Also it does not allocate memory in changes inferring phase.
 Levsha's memory usage is constant 64k.
 
 ```scala
