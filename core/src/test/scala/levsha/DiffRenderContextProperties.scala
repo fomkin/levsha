@@ -53,7 +53,7 @@ sealed trait TestDoc {
   def apply(rc: RenderContext[Nothing]): Unit = this match {
     case TestDoc.Text(text) => rc.addTextNode(text)
     case TestDoc.Element(name, attrs, xs) =>
-      rc.openNode(name)
+      rc.openNode(name, XmlNs.html)
       attrs foreach {
         case (attr, value) =>
           rc.setAttr(attr, value)
@@ -265,7 +265,7 @@ object ChangesTrial {
     def flatDocToChanges(doc: (List[Int], TestDoc)) = doc match {
       case (id, Text(value)) => List(Change.createText(id, value))
       case (id, Element(name, attrs, _)) =>
-        Change.create(id, name) :: attrs.toList.map {
+        Change.create(id, name, XmlNs.html.uri) :: attrs.toList.map {
           case (attr, value) => Change.setAttr(id, attr, value)
         }
     }
@@ -313,7 +313,7 @@ object ChangesTrial {
       }
 
       val updatedFlatDocument = changes.foldLeft(flatDocument.toMap) {
-        case (acc, Change.create(id, name)) =>
+        case (acc, Change.create(id, name, _)) =>
           acc
             .get(id)
             .fold(acc) {

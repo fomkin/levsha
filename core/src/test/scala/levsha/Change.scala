@@ -5,9 +5,6 @@ import levsha.impl.DiffRenderContext.ChangesPerformer
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-/**
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
-  */
 sealed trait Change {
   def id: List[Int]
 }
@@ -26,8 +23,8 @@ object Change {
       buffer += Change.setAttr(id.toList.map(_.toInt), name, value)
     def createText(id: Id, text: String): Unit =
       buffer += Change.createText(id.toList.map(_.toInt), text)
-    def create(id: Id, tag: String): Unit =
-      buffer += Change.create(id.toList.map(_.toInt), tag)
+    def create(id: Id, tag: String, xmlNs: String): Unit =
+      buffer += Change.create(id.toList.map(_.toInt), tag, xmlNs)
     def result: Seq[Change] = buffer
   }
 
@@ -35,7 +32,7 @@ object Change {
   case class remove(id: List[Int]) extends Change
   case class setAttr(id: List[Int], name: String, value: String) extends Change
   case class createText(id: List[Int], text: String) extends Change
-  case class create(id: List[Int], tag: String) extends Change
+  case class create(id: List[Int], tag: String, xmlNs: String) extends Change
 
   implicit val ordering = new Ordering[Change] {
     private val iterableIntOrdering = implicitly[Ordering[Iterable[Int]]]

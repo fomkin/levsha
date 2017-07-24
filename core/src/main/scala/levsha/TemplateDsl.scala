@@ -51,8 +51,12 @@ class TemplateDsl[MiscType] {
     * }}}
     */
   implicit final class SymbolOps(s: Symbol) {
-    def apply(children: Document[MiscType]*): Node[MiscType] =
+
+    def apply(specials: Special*)(children: Document[MiscType]*): Node[MiscType] =
       macro TemplateDslMacro.node[MiscType]
+
+    def apply(children: Document[MiscType]*): Node[MiscType] =
+      macro TemplateDslMacro.defaultNode[MiscType]
 
     def /=(value: String): Attr[MiscType] =
       macro TemplateDslMacro.attr[MiscType]
