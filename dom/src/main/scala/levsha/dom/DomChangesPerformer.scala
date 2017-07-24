@@ -8,9 +8,6 @@ import org.scalajs.{dom => browserDom}
 import scala.collection.mutable
 import scala.scalajs.js
 
-/**
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
-  */
 final class DomChangesPerformer(target: Element) extends ChangesPerformer {
 
   private val index = mutable.Map[Id, Node](Id(1.toShort) -> target)
@@ -36,8 +33,8 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
     browserDom.document.createTextNode(text)
   }
 
-  def create(id: Id, tag: String): Unit = create(id) {
-    browserDom.document.createElement(tag)
+  def create(id: Id, tag: String, xmlNs: String): Unit = create(id) {
+    browserDom.document.createElementNS(xmlNs, tag)
   }
 
   def remove(id: Id): Unit = index.remove(id) foreach { el =>
@@ -45,7 +42,8 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
   }
 
   def setAttr(id: Id, name: String, value: String): Unit = index.get(id) foreach {
-    case el: Element => el.setAttribute(name, value)
+    case el: Element =>
+      el.setAttribute(name, value)
     case node => browserDom.console.warn(s"Can't set attribute to $node")
   }
 

@@ -26,9 +26,9 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
       assert(
         changes == Seq(
-          create("1", "input"),
+          create("1", "input", XmlNs.html.uri),
           setAttr("1", "disabled", ""),
-          create("1_1", "div"),
+          create("1_1", "div", XmlNs.html.uri),
           setAttr("1_1", "name", "cow")
         )
       )
@@ -73,9 +73,9 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
       assert {
         changes == Seq(
-          create("1_4","div"),
+          create("1_4","div", XmlNs.html.uri),
           setAttr("1_4","lang","ru"),
-          create("1_6","span")
+          create("1_6","span", XmlNs.html.uri)
         )
       }
     }
@@ -137,6 +137,23 @@ object DiffRenderContextTest extends utest.TestSuite {
       renderContext2.diff(performer)
       val changes = performer.result
       assert(changes == Seq(removeAttr("1", "class")))
+    }
+
+    "should consider two identical tags with different xmlNs as different tags" - {
+      val changes = runDiff(
+        original = {
+          'div('svg('width /= "1"))
+        },
+        updated = {
+          'div('div('width /= "1"))
+        }
+      )
+      assert {
+        changes == Seq(
+          create(List(1, 1), "div", XmlNs.html.uri),
+          setAttr(List(1, 1), "width", "1")
+        )
+      }
     }
   }
 

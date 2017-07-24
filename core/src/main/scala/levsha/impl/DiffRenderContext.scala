@@ -3,7 +3,7 @@ package levsha.impl
 import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
-import levsha.{Id, IdBuilder, RenderContext}
+import levsha.{Id, IdBuilder, RenderContext, XmlNs}
 import levsha.impl.DiffRenderContext._
 import levsha.impl.internal.Op._
 
@@ -76,7 +76,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     resizeBuffer(0)
   }
 
-  def openNode(name: String): Unit = {
+  def openNode(name: String, xmlns: XmlNs): Unit = {
     closeAttrs()
     attrsOpened = true
     idb.incId()
@@ -84,7 +84,9 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     requestResize(OpOpenSize)
     lhs.put(OpOpen.toByte)
     lhs.putInt(name.hashCode)
+    lhs.putInt(xmlns.uri.hashCode)
     idents.update(name.hashCode, name)
+    idents.update(xmlns.hashCode, xmlns.uri)
   }
 
   def closeNode(name: String): Unit = {
@@ -165,8 +167,11 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       if (opA == OpOpen && opB == OpOpen) {
         idb.incId()
         val tagA = readTag(lhs)
-        if (tagA != readTag(rhs)) {
-          performer.create(idb.mkId, idents(tagA))
+        val xmlNsA = readXmlNs(lhs)
+        val tagB = readTag(rhs)
+        val xmlNsB = readXmlNs(rhs)
+        if (tagA != tagB || xmlNsA != xmlNsB) {
+          performer.create(idb.mkId, idents(tagA), idents(xmlNsA))
           skipLoop(rhs)
           idb.incLevel()
           createLoop(lhs, performer)
@@ -188,14 +193,16 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       } else if (opA == OpText && opB == OpOpen) {
         val aText = readText(lhs)
         readTag(rhs) // skip tag b
+        readXmlNs(rhs) // skip tag b
         idb.incId()
         performer.createText(idb.mkId, aText)
         skipLoop(rhs)
       } else if (opA == OpOpen && opB == OpText) {
         val tagA = readTag(lhs)
+        val xmlNsA = readXmlNs(lhs)
         idb.incId()
         skipText(rhs)
-        performer.create(idb.mkId, idents(tagA))
+        performer.create(idb.mkId, idents(tagA), idents(xmlNsA))
         idb.incLevel()
         createLoop(lhs, performer)
         idb.decLevel()
@@ -231,6 +238,10 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
   private def readTag(x: ByteBuffer): Int = {
     x.getInt()
+  }
+
+  private def readXmlNs(x: ByteBuffer): Int = {
+    x.getInt
   }
 
   private def skipText(x: ByteBuffer): Unit = {
@@ -301,6 +312,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         case OpText => skipText(x)
         case OpOpen =>
           x.getInt() // skip tag
+          x.getInt() // skip xmlns
           idb.incLevel()
       }
     }
@@ -323,7 +335,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
           performer.createText(idb.mkId, readText(x))
         case OpOpen =>
           idb.incId()
-          performer.create(idb.mkId, idents(x.getInt()))
+          performer.create(idb.mkId, idents(readTag(x)), idents(readXmlNs(x)))
           idb.incLevel()
         case OpLastAttr => // do nothing
       }
@@ -335,7 +347,8 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     while (continue) {
       (op(x): @switch) match {
         case OpOpen =>
-          x.getInt() // skip tag
+          readTag(x)
+          readXmlNs(x)
           idb.incId()
           performer.remove(idb.mkId)
           skipLoop(x)
@@ -502,7 +515,7 @@ object DiffRenderContext {
     def remove(id: Id): Unit
     def setAttr(id: Id, name: String, value: String): Unit
     def createText(id: Id, text: String): Unit
-    def create(id: Id, tag: String): Unit
+    def create(id: Id, tag: String, xmlNs: String): Unit
   }
 
   object DummyChangesPerformer extends ChangesPerformer {
@@ -510,7 +523,7 @@ object DiffRenderContext {
     def remove(id: Id): Unit = ()
     def setAttr(id: Id, name: String, value: String): Unit = ()
     def createText(id: Id, text: String): Unit = ()
-    def create(id: Id, tag: String): Unit = ()
+    def create(id: Id, tag: String, xmlNs: String): Unit = ()
   }
 
   type MiscCallback[MiscType] = (Id, MiscType) => _

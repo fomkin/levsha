@@ -1,6 +1,6 @@
 package levsha.impl
 
-import levsha.RenderContext
+import levsha.{RenderContext, XmlNs}
 import levsha.impl.internal.Op._
 
 /**
@@ -28,7 +28,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     }
   }
 
-  def openNode(name: String): Unit = {
+  def openNode(name: String, xmlns: XmlNs): Unit = {
     if (lastOp != OpClose && lastOp != OpText) {
       builder.append('>')
       builder.append(prettyPrinting.lineBreak)

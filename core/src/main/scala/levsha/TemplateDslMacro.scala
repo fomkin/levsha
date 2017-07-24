@@ -18,7 +18,11 @@ import scala.collection.concurrent.TrieMap
   import TemplateDslMacroHelper.Op
   import Op._
 
-  def node[MT: WeakTypeTag](children: Tree*): Tree = {
+  def defaultNode[MT: WeakTypeTag](children: Tree*): Tree = {
+    node()(children:_*)
+  }
+
+  def node[MT: WeakTypeTag](specials: Tree*)(children: Tree*): Tree = {
 
     // Hack. We need to exchange trees between different
     // macro expansion.
@@ -29,6 +33,10 @@ import scala.collection.concurrent.TrieMap
     val q"$conv($in)" = c.prefix.tree
     val nodeName = toKebab(in)
     val id = UUID.randomUUID.toString
+
+    val xmlNs = specials
+      .collectFirst { case special if special.tpe =:= typeOf[levsha.XmlNs] => special }
+      .getOrElse(q"levsha.XmlNs.html")
 
     val ops = {
       val innerOps = children
@@ -69,11 +77,11 @@ import scala.collection.concurrent.TrieMap
           case (utc, tc) if tc.tpe <:< weakTypeOf[Document[MT]] =>
             Seq(applyRc(utc))
         }
-      openNode(nodeName) +: innerOps :+ closeNode(nodeName)
+      openNode(nodeName, xmlNs) +: innerOps :+ closeNode(nodeName)
     }
 
     val opsCode = ops map {
-      case openNode(name) => q"rc.openNode($name)"
+      case openNode(name, xmlNs) => q"rc.openNode($name, $xmlNs)"
       case closeNode(name) => q"rc.closeNode($name)"
       case setAttr(k, v) => q"rc.setAttr($k, $v)"
       case addTextNode(text) => q"rc.addTextNode($text)"
@@ -122,7 +130,7 @@ object TemplateDslMacroHelper {
   sealed trait Op[+Tree]
 
   object Op {
-    case class openNode(name: String) extends Op[Nothing]
+    case class openNode[Tree](name: String, xmlNs: Tree) extends Op[Tree]
     case class closeNode(name: String) extends Op[Nothing]
     case class setAttr[Tree](name: Tree, value: Tree) extends Op[Tree]
     case class addTextNode[Tree](text: Tree) extends Op[Tree]
