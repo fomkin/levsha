@@ -145,12 +145,12 @@ object DiffRenderContextTest extends utest.TestSuite {
           'div('svg('width /= "1"))
         },
         updated = {
-          'div('div('width /= "1"))
+          'div(XmlNs.svg('svg)('width /= "1"))
         }
       )
       assert {
         changes == Seq(
-          create(List(1, 1), "div", XmlNs.html.uri),
+          create(List(1, 1), "div", XmlNs.svg.uri),
           setAttr(List(1, 1), "width", "1")
         )
       }
