@@ -1,8 +1,12 @@
 package levsha
 
-sealed trait Special
+import scala.language.experimental.macros
 
-final case class XmlNs(uri: String) extends Special {
+final case class XmlNs(uri: String) {
+
+  def apply(symbol: Symbol): QualifiedName =
+    macro TemplateDslMacro.xmlNsCreateQualifiedName
+  
   override val hashCode: Int = uri.hashCode
 }
 

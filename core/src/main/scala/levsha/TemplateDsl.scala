@@ -4,8 +4,14 @@ import scala.language.experimental.macros
 import scala.language.implicitConversions
 
 /**
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
-  */
+ * Symbol based DSL allows to define documents
+ * {{{
+ *   'body(
+ *     'h1(class /= "title", "Hello World"),
+ *     'p("Lorem ipsum dolor")
+ *   )
+ * }}}
+ */
 class TemplateDsl[MiscType] {
 
   import Document._
@@ -42,21 +48,19 @@ class TemplateDsl[MiscType] {
   implicit def arbitraryOptionToNode[T](value: Option[T])(implicit ev: T => Node[MiscType]): Node[MiscType] =
     Node(rc => if (value.nonEmpty) ev(value.get).apply(rc))
 
-  /** Symbol based DSL allows to define documents
-    * {{{
-    *   'body(
-    *     'h1(class /= "title", "Hello World"),
-    *     'p("Lorem ipsum dolor")
-    *   )
-    * }}}
-    */
-  implicit final class SymbolOps(s: Symbol) {
-
-    def apply(specials: Special*)(children: Document[MiscType]*): Node[MiscType] =
-      macro TemplateDslMacro.node[MiscType]
+  implicit final class SymbolOps(symbol: Symbol) {
 
     def apply(children: Document[MiscType]*): Node[MiscType] =
-      macro TemplateDslMacro.defaultNode[MiscType]
+      macro TemplateDslMacro.node[MiscType]
+
+    def /=(value: String): Attr[MiscType] =
+      macro TemplateDslMacro.attr[MiscType]
+  }
+
+  implicit final class QualifiedNameOps(s: QualifiedName) {
+
+    def apply(children: Document[MiscType]*): Node[MiscType] =
+      macro TemplateDslMacro.node[MiscType]
 
     def /=(value: String): Attr[MiscType] =
       macro TemplateDslMacro.attr[MiscType]

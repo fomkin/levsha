@@ -18,11 +18,14 @@ import scala.collection.concurrent.TrieMap
   import TemplateDslMacroHelper.Op
   import Op._
 
-  def defaultNode[MT: WeakTypeTag](children: Tree*): Tree = {
-    node()(children:_*)
+  def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
+    case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
+      (xmlNs, toKebab(rawName))
+    case expr @ q"$conv($rawName)" =>
+      (q"levsha.XmlNs.html", toKebab(rawName))
   }
 
-  def node[MT: WeakTypeTag](specials: Tree*)(children: Tree*): Tree = {
+  def node[MT: WeakTypeTag](children: Tree*): Tree = {
 
     // Hack. We need to exchange trees between different
     // macro expansion.
@@ -30,13 +33,8 @@ import scala.collection.concurrent.TrieMap
       .asInstanceOf[TrieMap[String, Seq[Op[Tree]]]]
 
     val MT = weakTypeOf[MT]
-    val q"$conv($in)" = c.prefix.tree
-    val nodeName = toKebab(in)
     val id = UUID.randomUUID.toString
-
-    val xmlNs = specials
-      .collectFirst { case special if special.tpe =:= typeOf[levsha.XmlNs] => special }
-      .getOrElse(q"levsha.XmlNs.html")
+    val (xmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
 
     val ops = {
       val innerOps = children
@@ -101,14 +99,18 @@ import scala.collection.concurrent.TrieMap
 
   def attr[MT: WeakTypeTag](value: Tree): Tree = {
     val MT = weakTypeOf[MT]
-    val q"$conv($in)" = c.prefix.tree
-    val attr = toKebab(in)
+    val (xmlNs, attr) = unfoldQualifiedName(c.prefix.tree)
 
     q"""
       levsha.Document.Attr.apply[$MT] { rc =>
         rc.setAttr($attr, $value)
       }
     """
+  }
+
+  def xmlNsCreateQualifiedName(symbol: Tree): Tree = {
+    println(c.prefix.tree)
+    q"levsha.QualifiedName(${c.prefix.tree}, $symbol)"
   }
 
   // Converts symbol 'camelCase to "kebab-case"
