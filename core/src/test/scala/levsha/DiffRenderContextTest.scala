@@ -4,6 +4,7 @@ import levsha.impl.DiffRenderContext
 import levsha.impl.DiffRenderContext.DummyChangesPerformer
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
 /**
@@ -27,9 +28,9 @@ object DiffRenderContextTest extends utest.TestSuite {
       assert(
         changes == Seq(
           create("1", "input", XmlNs.html.uri),
-          setAttr("1", "disabled", ""),
+          setAttr("1", "disabled", XmlNs.html.uri, ""),
           create("1_1", "div", XmlNs.html.uri),
-          setAttr("1_1", "name", "cow")
+          setAttr("1_1", "name", XmlNs.html.uri, "cow")
         )
       )
     }
@@ -74,7 +75,7 @@ object DiffRenderContextTest extends utest.TestSuite {
       assert {
         changes == Seq(
           create("1_4","div", XmlNs.html.uri),
-          setAttr("1_4","lang","ru"),
+          setAttr("1_4","lang", XmlNs.html.uri, "ru"),
           create("1_6","span", XmlNs.html.uri)
         )
       }
@@ -85,7 +86,7 @@ object DiffRenderContextTest extends utest.TestSuite {
         original = { 'span('class /= "world",'style /= "margin: 10;", "q") },
         updated = { 'span('style /= "margin: 10;", "q") }
       )
-      assert(changes == Seq(removeAttr("1", "class")))
+      assert(changes == Seq(removeAttr("1", XmlNs.html.uri, "class")))
     }
     
     "should remove only subroot, not entire tree" - {
@@ -136,7 +137,7 @@ object DiffRenderContextTest extends utest.TestSuite {
       updated(renderContext2)
       renderContext2.diff(performer)
       val changes = performer.result
-      assert(changes == Seq(removeAttr("1", "class")))
+      assert(changes == Seq(removeAttr("1", XmlNs.html.uri, "class")))
     }
 
     "should consider two identical tags with different xmlNs as different tags" - {
@@ -150,8 +151,33 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
       assert {
         changes == Seq(
-          create(List(1, 1), "div", XmlNs.svg.uri),
-          setAttr(List(1, 1), "width", "1")
+          create(List(1, 1), "svg", XmlNs.svg.uri),
+          setAttr(List(1, 1), "width", XmlNs.html.uri, "1")
+        )
+      }
+    }
+
+    "should consider two identical attributes with different xmlNs as different one" - {
+      val changes = runDiff(
+        original = {
+          'div(
+            'a /= "value",
+            'b /= "value"
+          )
+        },
+        updated = {
+          'div(
+            XmlNs.mathml('a) /= "value",
+            XmlNs.svg('b) /= "value"
+          )
+        }
+      )
+      assert {
+        changes == Seq(
+          removeAttr(List(1), XmlNs.html.uri, "b"),
+          removeAttr(List(1), XmlNs.html.uri, "a"),
+          setAttr(List(1), "b", XmlNs.svg.uri, "value"),
+          setAttr(List(1), "a", XmlNs.mathml.uri, "value")
         )
       }
     }

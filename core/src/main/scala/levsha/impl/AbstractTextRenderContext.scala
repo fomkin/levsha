@@ -55,7 +55,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     lastOp = OpClose
   }
 
-  def setAttr(name: String, value: String): Unit = {
+  def setAttr(name: String, xmlNs: XmlNs, value: String): Unit = {
     builder.append(' ')
     builder.append(name)
     builder.append('=')

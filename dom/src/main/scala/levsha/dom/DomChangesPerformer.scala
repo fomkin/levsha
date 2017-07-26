@@ -1,6 +1,6 @@
 package levsha.dom
 
-import levsha.Id
+import levsha.{Id, XmlNs}
 import levsha.impl.DiffRenderContext.ChangesPerformer
 import org.scalajs.dom.{Element, Node}
 import org.scalajs.{dom => browserDom}
@@ -41,14 +41,15 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
     el.parentNode.removeChild(el)
   }
 
-  def setAttr(id: Id, name: String, value: String): Unit = index.get(id) foreach {
-    case el: Element =>
-      el.setAttribute(name, value)
+  def setAttr(id: Id, xmlNs: String, name: String, value: String): Unit = index.get(id) foreach {
+    case node: Element if xmlNs eq XmlNs.html.uri => node.setAttribute(name, value)
+    case node: Element => node.setAttributeNS(xmlNs, name, value)
     case node => browserDom.console.warn(s"Can't set attribute to $node")
   }
 
-  def removeAttr(id: Id, name: String): Unit = index.get(id) foreach {
-    case el: Element => el.removeAttribute(name)
+  def removeAttr(id: Id, xmlNs: String, name: String): Unit = index.get(id) foreach {
+    case node: Element if xmlNs eq XmlNs.html.uri => node.removeAttribute(name)
+    case node: Element => node.removeAttributeNS(xmlNs, name)
     case node => browserDom.console.warn(s"Can't remove attribute from $node")
   }
 }
