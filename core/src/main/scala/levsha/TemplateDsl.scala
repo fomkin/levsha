@@ -67,4 +67,6 @@ class TemplateDsl[MiscType] {
   }
 
   val void = Empty
+
+  val ns = XmlNs
 }

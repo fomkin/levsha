@@ -146,7 +146,7 @@ object DiffRenderContextTest extends utest.TestSuite {
           'div('svg('width /= "1"))
         },
         updated = {
-          'div(XmlNs.svg('svg)('width /= "1"))
+          'div(ns.svg('svg)('width /= "1"))
         }
       )
       assert {
@@ -167,8 +167,8 @@ object DiffRenderContextTest extends utest.TestSuite {
         },
         updated = {
           'div(
-            XmlNs.mathml('a) /= "value",
-            XmlNs.svg('b) /= "value"
+            ns.mathml('a) /= "value",
+            ns.svg('b) /= "value"
           )
         }
       )
