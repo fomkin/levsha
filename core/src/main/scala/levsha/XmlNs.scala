@@ -4,6 +4,9 @@ import scala.language.experimental.macros
 
 final case class XmlNs(uri: String) {
 
+  /**
+    * Create qualified name from symbol
+    */
   def apply(symbol: Symbol): QualifiedName =
     macro TemplateDslMacro.xmlNsCreateQualifiedName
   

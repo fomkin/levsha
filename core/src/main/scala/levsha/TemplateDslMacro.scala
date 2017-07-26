@@ -34,7 +34,7 @@ import scala.collection.concurrent.TrieMap
 
     val MT = weakTypeOf[MT]
     val id = UUID.randomUUID.toString
-    val (xmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
+    val (nodeXmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
 
     val ops = {
       val innerOps = children
@@ -67,7 +67,8 @@ import scala.collection.concurrent.TrieMap
         .flatMap {
           case (Apply(Select(_, TermName("stringToNode")), value :: Nil), _) => Seq(addTextNode(value))
           case (Apply(Select(_, TermName("miscToNode")), value :: Nil), _) => Seq(addMisc(value))
-          case (Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $v) }", _), _) => Seq(setAttr(k, v))
+          case (Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $ns, $v) }", _), _) =>
+            Seq(setAttr(k, ns, v))
           case (Typed(q"levsha.Document.Node.apply[$t] { rc => ..$ops }", _), _) =>
             val q"levsha.TemplateDslMacroHelper.id(${id: String})" :: _ = ops
             savedOps.remove(id).getOrElse(
@@ -75,13 +76,13 @@ import scala.collection.concurrent.TrieMap
           case (utc, tc) if tc.tpe <:< weakTypeOf[Document[MT]] =>
             Seq(applyRc(utc))
         }
-      openNode(nodeName, xmlNs) +: innerOps :+ closeNode(nodeName)
+      openNode(nodeName, nodeXmlNs) +: innerOps :+ closeNode(nodeName)
     }
 
     val opsCode = ops map {
       case openNode(name, xmlNs) => q"rc.openNode($name, $xmlNs)"
       case closeNode(name) => q"rc.closeNode($name)"
-      case setAttr(k, v) => q"rc.setAttr($k, $v)"
+      case setAttr(k, xmlNs, v) => q"rc.setAttr($k, $xmlNs, $v)"
       case addTextNode(text) => q"rc.addTextNode($text)"
       case addMisc(misc) => q"rc.addMisc($misc)"
       case applyRc(tree) => q"(${tree.duplicate}).apply(rc)"
@@ -103,13 +104,12 @@ import scala.collection.concurrent.TrieMap
 
     q"""
       levsha.Document.Attr.apply[$MT] { rc =>
-        rc.setAttr($attr, $value)
+        rc.setAttr($attr, $xmlNs, $value)
       }
     """
   }
 
   def xmlNsCreateQualifiedName(symbol: Tree): Tree = {
-    println(c.prefix.tree)
     q"levsha.QualifiedName(${c.prefix.tree}, $symbol)"
   }
 
@@ -134,7 +134,7 @@ object TemplateDslMacroHelper {
   object Op {
     case class openNode[Tree](name: String, xmlNs: Tree) extends Op[Tree]
     case class closeNode(name: String) extends Op[Nothing]
-    case class setAttr[Tree](name: Tree, value: Tree) extends Op[Tree]
+    case class setAttr[Tree](name: Tree, xmlNs: Tree, value: Tree) extends Op[Tree]
     case class addTextNode[Tree](text: Tree) extends Op[Tree]
     case class addMisc[Tree](misc: Tree) extends Op[Tree]
 

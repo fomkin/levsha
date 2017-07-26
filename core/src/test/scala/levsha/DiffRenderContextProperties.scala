@@ -56,7 +56,7 @@ sealed trait TestDoc {
       rc.openNode(name, XmlNs.html)
       attrs foreach {
         case (attr, value) =>
-          rc.setAttr(attr, value)
+          rc.setAttr(attr, XmlNs.html, value)
       }
       xs.foreach(x => x(rc))
       rc.closeNode(name)
@@ -266,7 +266,7 @@ object ChangesTrial {
       case (id, Text(value)) => List(Change.createText(id, value))
       case (id, Element(name, attrs, _)) =>
         Change.create(id, name, XmlNs.html.uri) :: attrs.toList.map {
-          case (attr, value) => Change.setAttr(id, attr, value)
+          case (attr, value) => Change.setAttr(id, attr, XmlNs.html.uri, value)
         }
     }
     for {
@@ -297,8 +297,8 @@ object ChangesTrial {
             }
             val idToRemove = if (toRemove.isEmpty) id else toRemove.last
             Seq(Change.remove(idToRemove))
-          case Intent.SetAttr(id, attr, value) => Seq(Change.setAttr(id, attr, value))
-          case Intent.RemoveAttr(id, attr) => Seq(Change.removeAttr(id, attr))
+          case Intent.SetAttr(id, attr, value) => Seq(Change.setAttr(id, attr, XmlNs.html.uri, value))
+          case Intent.RemoveAttr(id, attr) => Seq(Change.removeAttr(id, XmlNs.html.uri, attr))
         }
         xs.filter {
             case _: Change.remove => true
@@ -326,14 +326,14 @@ object ChangesTrial {
             .filter(!_._1.startsWith(id))
             .updated(id, Text(text))
         case (acc, Change.remove(id)) => acc.filter(!_._1.startsWith(id))
-        case (acc, Change.removeAttr(id, attr)) if acc.contains(id) =>
+        case (acc, Change.removeAttr(id, _, attr)) if acc.contains(id) =>
           acc(id) match {
             case _: Text => acc
             case el: Element =>
               val updatedEl = el.copy(attrs = el.attrs - attr)
               acc + (id -> updatedEl)
           }
-        case (acc, Change.setAttr(id, name, value)) if acc.contains(id) =>
+        case (acc, Change.setAttr(id, name, _, value)) if acc.contains(id) =>
           acc(id) match {
             case _: Text => acc
             case el: Element =>

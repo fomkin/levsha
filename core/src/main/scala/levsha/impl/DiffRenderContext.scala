@@ -96,12 +96,14 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     lhs.put(OpClose.toByte)
   }
 
-  def setAttr(name: String, value: String): Unit = {
+  def setAttr(name: String, xmlNs: XmlNs, value: String): Unit = {
     val bytes = value.getBytes(StandardCharsets.UTF_8)
     idents.update(name.hashCode, name)
+    idents.update(xmlNs.uri.hashCode, xmlNs.uri)
     requestResize(OpAttrSize + bytes.length * 2)
     lhs.put(OpAttr.toByte)
     lhs.putInt(name.hashCode)
+    lhs.putInt(xmlNs.uri.hashCode)
     lhs.putInt(bytes.length)
     lhs.put(bytes)
   }
@@ -261,7 +263,8 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   }
 
   private def skipAttr(x: ByteBuffer): Unit = {
-    x.getInt()
+    x.getInt() // tag name
+    x.getInt() // ns
     val len = x.getInt()
     x.position(x.position + len)
   }
@@ -285,6 +288,10 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
   private def readAttr(x: ByteBuffer) = {
     idents(x.getInt())
+  }
+
+  private def readAttrXmlNs(x: ByteBuffer) = {
+    x.getInt()
   }
 
   private def readAttrText(x: ByteBuffer, len: Int) = {
@@ -328,7 +335,9 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
           else idb.decLevel()
         case OpAttr =>
           idb.decLevelTmp()
-          performer.setAttr(idb.mkId, readAttr(x), readAttrText(x))
+          val attr = readAttr(x)
+          var xmlNs = idents(readAttrXmlNs(x))
+          performer.setAttr(idb.mkId, xmlNs, attr, readAttrText(x))
           idb.incLevel()
         case OpText =>
           idb.incId()
@@ -369,17 +378,19 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     // Check the attrs were removed
     while (checkAttr(rhs)) {
       val attrNameB = readAttrRaw(rhs)
+      val attrXmlNsB = readAttrXmlNs(rhs)
       var needToRemove = true
       skipAttrText(rhs)
       lhs.position(startPosA)
       while (needToRemove && checkAttr(lhs)) {
         val attrNameA = readAttrRaw(lhs)
+        val attrXmlNsA = readAttrXmlNs(lhs)
         skipAttrText(lhs)
-        if (attrNameA == attrNameB)
+        if (attrNameA == attrNameB && attrXmlNsA == attrXmlNsB)
           needToRemove = false
       }
       if (needToRemove) {
-        performer.removeAttr(idb.mkId, idents(attrNameB))
+        performer.removeAttr(idb.mkId, idents(attrXmlNsB), idents(attrNameB))
       }
     }
     // Check the attrs were added
@@ -387,16 +398,18 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     lhs.position(startPosA)
     while (checkAttr(lhs)) {
       val nameA = readAttrRaw(lhs)
+      val xmlNsA = readAttrXmlNs(lhs)
       val valueLenA = lhs.getInt()
       val valuePosA = lhs.position()
       var needToSet = true
       rhs.position(startPosB)
       while (needToSet && checkAttr(rhs)) {
         val nameB = readAttrRaw(rhs)
+        val xmlNsB = readAttrXmlNs(rhs)
         val valueLenB = rhs.getInt()
         val valuePosB = rhs.position()
         // First condition: name of attributes should be equals
-        if (nameA == nameB) {
+        if (nameA == nameB && xmlNsA == xmlNsB) {
           if (valueLenA == valueLenB) {
             var i = 0
             var eq = true
@@ -413,7 +426,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       if (needToSet) {
         lhs.position(valuePosA)
         val valueA = readAttrText(lhs, valueLenA)
-        performer.setAttr(idb.mkId, idents(nameA), valueA)
+        performer.setAttr(idb.mkId, idents(xmlNsA), idents(nameA), valueA)
       } else {
         lhs.position(valuePosA + valueLenA)
       }
@@ -511,17 +524,17 @@ object DiffRenderContext {
   }
 
   trait ChangesPerformer {
-    def removeAttr(id: Id, name: String): Unit
+    def removeAttr(id: Id, xmlNs: String, name: String): Unit
     def remove(id: Id): Unit
-    def setAttr(id: Id, name: String, value: String): Unit
+    def setAttr(id: Id,  xmlNs: String, name: String, value: String): Unit
     def createText(id: Id, text: String): Unit
     def create(id: Id, tag: String, xmlNs: String): Unit
   }
 
   object DummyChangesPerformer extends ChangesPerformer {
-    def removeAttr(id: Id, name: String): Unit = ()
+    def removeAttr(id: Id, xmlNs: String, name: String): Unit = ()
     def remove(id: Id): Unit = ()
-    def setAttr(id: Id, name: String, value: String): Unit = ()
+    def setAttr(id: Id, name: String, xmlNs: String, value: String): Unit = ()
     def createText(id: Id, text: String): Unit = ()
     def create(id: Id, tag: String, xmlNs: String): Unit = ()
   }

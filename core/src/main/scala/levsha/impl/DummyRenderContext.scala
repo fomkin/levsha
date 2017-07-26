@@ -9,7 +9,7 @@ import levsha.{RenderContext, XmlNs}
 class DummyRenderContext[-M] extends RenderContext[M] {
   def openNode(name: String, xmlns: XmlNs): Unit = {}
   def closeNode(name: String): Unit = {}
-  def setAttr(name: String, value: String): Unit = {}
+  def setAttr(name: String, xmlNs: XmlNs, value: String): Unit = {}
   def addTextNode(text: String): Unit = {}
   def addMisc(misc: M): Unit = {}
 }
