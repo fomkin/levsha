@@ -7,7 +7,14 @@ import macrocompat.bundle
 @bundle class TemplateDslMacro(val c: blackbox.Context) {
 
   import c.universe._
-  
+
+  val notOptimizedWarningsEnabled = {
+    val propName = "levsha.macros.notOptimizedWarnings"
+    sys.props.get(propName)
+      .orElse(sys.env.get(propName))
+      .fold(false)(x => if (x == "true") true else false)
+  }
+
   def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
     case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
       (xmlNs, toKebab(rawName))
@@ -53,6 +60,8 @@ import macrocompat.bundle
         q"$skip match { case ..$optimizedCases }"
       // Can't optimize
       case _ =>
+        if (notOptimizedWarningsEnabled)
+          c.warning(tree.pos, "Can't optimize")
         q"$tree.apply(rc)"
     }
 
