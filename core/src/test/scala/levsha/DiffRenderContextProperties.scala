@@ -56,7 +56,7 @@ sealed trait TestDoc {
       rc.openNode(XmlNs.html, name)
       attrs foreach {
         case (attr, value) =>
-          rc.setAttr(attr, XmlNs.html, value)
+          rc.setAttr(XmlNs.html, attr, value)
       }
       xs.foreach(x => x(rc))
       rc.closeNode(name)

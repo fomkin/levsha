@@ -18,29 +18,41 @@ import macrocompat.bundle
   def node[MT: WeakTypeTag](children: Tree*): Tree = {
 
     def optimize(tree: Tree): Tree = tree match {
+      // Basic optimizations
       case Block(body, extractOpenNode(xs)) => q"..$body; ..$xs"
       case Select(_, TermName("void")) => EmptyTree
+      case Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($ns, $k, $v) }", _) => q"rc.setAttr($ns, $k, $v)"
       case extractOpenNode(xs) => q"..$xs"
       case extractConverter("stringToNode", value) => q"rc.addTextNode($value)"
       case extractConverter("miscToNode", value) => q"rc.addMisc($value)"
-      case Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $ns, $v) }", _) => q"rc.setAttr($k, $ns, $v)"
+      // Advanced optimizations
       case extractConverter("seqToNode", q"($seq).map[$b, $that](${f: Function})($bf)") =>
         q"""
-          val i = $seq.iterator
-          while (i.hasNext) {
-            val ${f.vparams.head.name} = i.next()
+          val $$iter = $seq.iterator
+          while ($$iter.hasNext) {
+            val ${f.vparams.head.name} = $$iter.next()
             ${optimize(f.body)}
           }
         """
+      case extractConverter("optionToNode" | "optionToAttr", q"($opt).map[$b](${f: Function})") =>
+        q"""
+          val $$opt = $opt
+          if ($$opt.nonEmpty) {
+            val ${f.vparams.head.name} = $$opt.get
+            ${optimize(f.body)}
+          }
+        """
+      // Control flow optimization
       case q"if ($cond) ${left: Tree} else ${right: Tree}" =>
         q"if ($cond) ${optimize(left)} else ${optimize(right)}"
       case q"$skip match { case ..$cases }" =>
         val optimizedCases = cases map {
           case cq"$p => ${b: Tree}" => cq"$p => ${optimize(b)}"
+          case cq"$p if $c => ${b: Tree}" => cq"$p if $c => ${optimize(b)}"
         }
         q"$skip match { case ..$optimizedCases }"
+      // Can't optimize
       case _ =>
-        println(showRaw(tree))
         q"$tree.apply(rc)"
     }
 
@@ -73,21 +85,21 @@ import macrocompat.bundle
           else 0
         }
         .flatMap {
-          case (tree, _) => Seq(optimize(identCleaner.transform(tree)))
+          case (tree, _) =>
+            Seq(optimize(identCleaner.transform(tree)))
         }
     }
 
     val MT = weakTypeOf[MT]
     val (nodeXmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
-    val code = q"""
+
+    q"""
       levsha.Document.Node.apply[$MT] { rc =>
         rc.openNode($nodeXmlNs, $nodeName)
         ..$ops
         rc.closeNode($nodeName)
       }
     """
-    println(code)
-    code
   }
 
   def attr[MT: WeakTypeTag](value: Tree): Tree = {
@@ -96,7 +108,7 @@ import macrocompat.bundle
 
     q"""
       levsha.Document.Attr.apply[$MT] { rc =>
-        rc.setAttr($attr, $xmlNs, $value)
+        rc.setAttr($xmlNs, $attr, $value)
       }
     """
   }
@@ -132,7 +144,7 @@ import macrocompat.bundle
 
   private object extractOpenNode {
     def unapply(tree: Tree): Option[Seq[Tree]] = tree match {
-      case Typed(q"levsha.Document.Node.apply[$t] { rc => ..$ops }", _) => Some(ops)
+      case Typed(q"levsha.Document.Node.apply[$t] { rc => ..${ops: Seq[Tree]} }", _) => Some(ops)
       case _ => None
     }
   }
