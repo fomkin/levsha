@@ -28,7 +28,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     }
   }
 
-  def openNode(name: String, xmlns: XmlNs): Unit = {
+  def openNode(xmlns: XmlNs, name: String): Unit = {
     if (lastOp != OpClose && lastOp != OpText) {
       builder.append('>')
       builder.append(prettyPrinting.lineBreak)

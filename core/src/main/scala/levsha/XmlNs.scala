@@ -7,9 +7,10 @@ final case class XmlNs(uri: String) {
   /**
     * Create qualified name from symbol
     */
+  // TODO move this to TemplateDsl
   def apply(symbol: Symbol): QualifiedName =
     macro TemplateDslMacro.xmlNsCreateQualifiedName
-  
+
   override val hashCode: Int = uri.hashCode
 }
 

@@ -4,7 +4,7 @@ package levsha
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
 trait RenderContext[-MiscType] {
-  def openNode(name: String, xmlns: XmlNs): Unit
+  def openNode(xmlns: XmlNs, name: String): Unit
   def closeNode(name: String): Unit
   def setAttr(name: String, xmlNs: XmlNs, value: String): Unit
   def addTextNode(text: String): Unit

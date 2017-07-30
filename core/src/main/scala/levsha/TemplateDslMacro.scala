@@ -1,43 +1,51 @@
 package levsha
 
-import java.util.UUID
-
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 import macrocompat.bundle
 
-import scala.collection.concurrent.TrieMap
-
-/**
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
-  */
 @bundle class TemplateDslMacro(val c: blackbox.Context) {
 
   import c.universe._
-
-  import TemplateDslMacroHelper.Op
-  import Op._
-
+  
   def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
     case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
       (xmlNs, toKebab(rawName))
-    case expr @ q"$conv($rawName)" =>
+    case expr @ q"$conv(${rawName: Tree})" =>
       (q"levsha.XmlNs.html", toKebab(rawName))
   }
 
   def node[MT: WeakTypeTag](children: Tree*): Tree = {
 
-    // Hack. We need to exchange trees between different
-    // macro expansion.
-    val savedOps = TemplateDslMacroHelper.savedOps
-      .asInstanceOf[TrieMap[String, Seq[Op[Tree]]]]
-
-    val MT = weakTypeOf[MT]
-    val id = UUID.randomUUID.toString
-    val (nodeXmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
+    def optimize(tree: Tree): Tree = tree match {
+      case Block(body, extractOpenNode(xs)) => q"..$body; ..$xs"
+      case Select(_, TermName("void")) => EmptyTree
+      case extractOpenNode(xs) => q"..$xs"
+      case extractConverter("stringToNode", value) => q"rc.addTextNode($value)"
+      case extractConverter("miscToNode", value) => q"rc.addMisc($value)"
+      case Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $ns, $v) }", _) => q"rc.setAttr($k, $ns, $v)"
+      case extractConverter("seqToNode", q"($seq).map[$b, $that](${f: Function})($bf)") =>
+        q"""
+          val i = $seq.iterator
+          while (i.hasNext) {
+            val ${f.vparams.head.name} = i.next()
+            ${optimize(f.body)}
+          }
+        """
+      case q"if ($cond) ${left: Tree} else ${right: Tree}" =>
+        q"if ($cond) ${optimize(left)} else ${optimize(right)}"
+      case q"$skip match { case ..$cases }" =>
+        val optimizedCases = cases map {
+          case cq"$p => ${b: Tree}" => cq"$p => ${optimize(b)}"
+        }
+        q"$skip match { case ..$optimizedCases }"
+      case _ =>
+        println(showRaw(tree))
+        q"$tree.apply(rc)"
+    }
 
     val ops = {
-      val innerOps = children
+      children
         // Check one of children has ambiguous Document type
         // Children should be Attr, Node or Empty
         .map { child =>
@@ -65,37 +73,21 @@ import scala.collection.concurrent.TrieMap
           else 0
         }
         .flatMap {
-          case (Apply(Select(_, TermName("stringToNode")), value :: Nil), _) => Seq(addTextNode(value))
-          case (Apply(Select(_, TermName("miscToNode")), value :: Nil), _) => Seq(addMisc(value))
-          case (Typed(q"levsha.Document.Attr.apply[$t] { rc => rc.setAttr($k, $ns, $v) }", _), _) =>
-            Seq(setAttr(k, ns, v))
-          case (Typed(q"levsha.Document.Node.apply[$t] { rc => ..$ops }", _), _) =>
-            val q"levsha.TemplateDslMacroHelper.id(${id: String})" :: _ = ops
-            savedOps.remove(id).getOrElse(
-              c.abort(c.enclosingPosition, s"Unexpected macro expansion order. $id not found"))
-          case (utc, tc) if tc.tpe <:< weakTypeOf[Document[MT]] =>
-            Seq(applyRc(utc))
+          case (tree, _) => Seq(optimize(identCleaner.transform(tree)))
         }
-      openNode(nodeName, nodeXmlNs) +: innerOps :+ closeNode(nodeName)
     }
 
-    val opsCode = ops map {
-      case openNode(name, xmlNs) => q"rc.openNode($name, $xmlNs)"
-      case closeNode(name) => q"rc.closeNode($name)"
-      case setAttr(k, xmlNs, v) => q"rc.setAttr($k, $xmlNs, $v)"
-      case addTextNode(text) => q"rc.addTextNode($text)"
-      case addMisc(misc) => q"rc.addMisc($misc)"
-      case applyRc(tree) => q"(${tree.duplicate}).apply(rc)"
-    }
-
-    savedOps.put(id, ops)
-
-    q"""
+    val MT = weakTypeOf[MT]
+    val (nodeXmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
+    val code = q"""
       levsha.Document.Node.apply[$MT] { rc =>
-        levsha.TemplateDslMacroHelper.id($id)
-        ..$opsCode
+        rc.openNode($nodeXmlNs, $nodeName)
+        ..$ops
+        rc.closeNode($nodeName)
       }
     """
+    println(code)
+    code
   }
 
   def attr[MT: WeakTypeTag](value: Tree): Tree = {
@@ -113,31 +105,35 @@ import scala.collection.concurrent.TrieMap
     q"levsha.QualifiedName(${c.prefix.tree}, $symbol)"
   }
 
-  // Converts symbol 'camelCase to "kebab-case"
+  // Utils
+
+  /**  Converts symbol 'camelCase to "kebab-case" */
   private def toKebab(tree: Tree): String = tree match {
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
     case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
   }
-}
 
-object TemplateDslMacroHelper {
+  /** Remove context binding from idents */
+  private object identCleaner extends Transformer {
+    override def transform(tree: Tree): Tree = {
+      tree match {
+        case Ident(TermName(name)) => Ident(TermName(name))
+        case _ => super.transform(tree)
+      }
+    }
+  }
 
-  // This method used by node simplifier macro.
-  def id(x: String): Unit = ()
+  private object extractConverter {
+    def unapply(tree: Tree): Option[(String, Tree)] = tree match {
+      case Apply(Select(_, TermName(fun)), value :: Nil) => Some((fun, value))
+      case _ => None
+    }
+  }
 
-  // Cache of operations corresponding to node.
-  // Trees should be untypechecked
-  lazy val savedOps = TrieMap.empty[String, Seq[Op[_]]]
-
-  sealed trait Op[+Tree]
-
-  object Op {
-    case class openNode[Tree](name: String, xmlNs: Tree) extends Op[Tree]
-    case class closeNode(name: String) extends Op[Nothing]
-    case class setAttr[Tree](name: Tree, xmlNs: Tree, value: Tree) extends Op[Tree]
-    case class addTextNode[Tree](text: Tree) extends Op[Tree]
-    case class addMisc[Tree](misc: Tree) extends Op[Tree]
-
-    case class applyRc[Tree](tree: Tree) extends Op[Tree]
+  private object extractOpenNode {
+    def unapply(tree: Tree): Option[Seq[Tree]] = tree match {
+      case Typed(q"levsha.Document.Node.apply[$t] { rc => ..$ops }", _) => Some(ops)
+      case _ => None
+    }
   }
 }

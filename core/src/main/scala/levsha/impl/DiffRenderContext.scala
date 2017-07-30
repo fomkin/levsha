@@ -16,6 +16,7 @@ Structures
 node {
   byte OPEN
   int tag_hash_code
+  int xmlns_hash_code
   attr attr_list[]
   byte LAST_ATTR
   node|text child[]
@@ -24,14 +25,15 @@ node {
 
 text {
   byte TEXT
-  short length
+  int length
   byte value[length]
 }
 
 attr {
   byte ATTR
   int attr_name_hash_code
-  short length
+  int xmlns_hash_code
+  int length
   byte value[length]
 }
 
@@ -76,7 +78,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     resizeBuffer(0)
   }
 
-  def openNode(name: String, xmlns: XmlNs): Unit = {
+  def openNode(xmlns: XmlNs, name: String): Unit = {
     closeAttrs()
     attrsOpened = true
     idb.incId()
@@ -336,7 +338,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         case OpAttr =>
           idb.decLevelTmp()
           val attr = readAttr(x)
-          var xmlNs = idents(readAttrXmlNs(x))
+          val xmlNs = idents(readAttrXmlNs(x))
           performer.setAttr(idb.mkId, xmlNs, attr, readAttrText(x))
           idb.incLevel()
         case OpText =>
