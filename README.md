@@ -1,11 +1,9 @@
-Levsha
-=======
+# Levsha
 
 Levsha is a fast HTML template engine and Scala eDSL. It works without additional memory allocation. 
 Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
 
-Static rendering
-----------------
+## Static rendering
 
 You can use Levsha as a static HTML renderer.
 
@@ -45,8 +43,7 @@ println(html)
 </body>
 ```
 
-Static Rendering Benchmarks
----------------------------
+#### Benchmarks
 
 Benchmarks show that Levsha is really fast. Unlike Twirl, 
 Levsha's performance does not depend on template complexity.
@@ -69,13 +66,12 @@ In your sbt shell.
 bench/jmh:run .StaticRenderingComparision
 ```
 
-As a virtual DOM
-----------------
+## As a virtual DOM
 
 Levsha can be used as virtual-DOM-like middleware. Unlike other popular 
 virtual DOM solutions, Levsha doesn't allocate additional memory for construction
 of a new virtual DOM copy. Also it does not allocate memory in changes inferring phase.
-Levsha's memory usage is constant 64k.
+Levsha's memory usage is constant.
 
 ```scala
 // build.sbt
@@ -139,8 +135,114 @@ val todos = Seq(
 
 renderTodos(todos)
 ```
+## Memory allocation model explanation
 
-Worthy to note
---------------
+As noted below Levsha does not make _additional_
+memory allocations. It is possible because every
+template, written in Levsha DSL, in compile-time
+optimizes into calls of `RenderContext` methods
+(unlike other template engines which  
+represent their templates as AST on-heap).
+
+For example,
+
+```scala
+'div('class /= "content", 
+  'h1("Hello world"),
+  'p("Lorem ipsum dolor")
+)
+```
+
+Will be rewritten to
+
+```scala
+Node { renderContext =>
+  renderContext.openNode(XmlNs.html, "div")
+  renderContext.setAttr(XmlNs.html, "class", "content")
+  renderContext.openNode(XmlNs.html, "h1")
+  renderContext.addTextNode("Hello world")
+  renderContext.closeNode("h1")
+  renderContext.openNode(XmlNs.html, "p")
+  renderContext.addTextNode("Lorem ipsum dolor")
+  renderContext.closeNode("p")
+  renderContext.closeNode("div")
+}
+```
+
+In turn, `RenderContext` (namely `DiffRenderContext` implementation)
+saves instructions in `ByteBuffer` to infer changes in the future.
+
+Of course, Levsha optimizer does not cover all cases.
+When optimization can't be performed Levsha just 
+applies current `RenderContext` to the unoptimized node.
+
+```scala
+'ul(
+  Seq(1, 2, 3, 4, 5, 6, 7).collect { 
+    case x if x % 2 == 0 => 'li(x.toString)
+  }
+)
+
+// ==>
+
+Node { renderContext =>
+  renderContext.openNode(XmlNs.html, "ul")
+  Seq(1, 2, 3, 4, 5, 6, 7)
+    .collect {
+      case x if x % 2 == 0 => 
+        Node { renderContext =>
+          renderContext.openNode(XmlNs.html, "li")
+          renderContext.addTextNode(x.toString)
+          renderContext.closeNode("li")
+        }
+    }
+    .foreach { childNode =>
+      childNode.apply(renderContext)
+    }
+  renderContext.closeNode("ul")
+}
+```
+
+When you write your Levsha templates, keep in 
+your mind this list of optimizations:
+
+1. Nodes and attrs in branches of `if` expression will be moved to current `RenderContext`
+2. Same for cases of pattern matching
+3. `xs.map(x => 'div(x))` will be rewritten into a `while` loop
+4. `maybeX.map(x => 'div(x))` will be rewritten into an `if` expression
+5. `void` will be removed
+
+The third item of this list shows us how to rewrite
+previous example so that optimization could be performed.
+
+```scala
+'ul(
+  Seq(1, 2, 3, 4, 5, 6, 7)
+    .filter(x => x % 2 == 0)
+    .map { x => 'li(x.toString) }
+)
+
+// ==>
+
+Node { renderContext =>
+  renderContext.openNode(XmlNs.html, "div")
+  val iterator = Seq(1, 2, 3, 4, 5, 6, 7)
+    .filter(x => x % 2 == 0)
+    .iterator
+  while (iterator.hasNext) {
+    val x = iterator.next()
+    renderContext.openNode(XmlNs.html, "li")
+    renderContext.addTextNode(x.toString)
+    renderContext.closeNode("li")
+  }
+  renderContext.closeNode("div")
+}
+```
+
+If you are not sure about you code, run compiler 
+with `levsha.macros.notOptimizedWarnings=true`
+parameter. For example `sbt -Dlevsha.macros.notOptimizedWarnings=true`
+
+## Worthy to note
 
 1. [The Tale of Cross-eyed Lefty from Tula and the Steel Flea](https://en.wikipedia.org/wiki/The_Tale_of_Cross-eyed_Lefty_from_Tula_and_the_Steel_Flea)

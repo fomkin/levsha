@@ -16,6 +16,7 @@ Structures
 node {
   byte OPEN
   int tag_hash_code
+  int xmlns_hash_code
   attr attr_list[]
   byte LAST_ATTR
   node|text child[]
@@ -24,14 +25,15 @@ node {
 
 text {
   byte TEXT
-  short length
+  int length
   byte value[length]
 }
 
 attr {
   byte ATTR
   int attr_name_hash_code
-  short length
+  int xmlns_hash_code
+  int length
   byte value[length]
 }
 
@@ -76,7 +78,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     resizeBuffer(0)
   }
 
-  def openNode(name: String, xmlns: XmlNs): Unit = {
+  def openNode(xmlns: XmlNs, name: String): Unit = {
     closeAttrs()
     attrsOpened = true
     idb.incId()
@@ -96,7 +98,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     lhs.put(OpClose.toByte)
   }
 
-  def setAttr(name: String, xmlNs: XmlNs, value: String): Unit = {
+  def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {
     val bytes = value.getBytes(StandardCharsets.UTF_8)
     idents.update(name.hashCode, name)
     idents.update(xmlNs.uri.hashCode, xmlNs.uri)
@@ -173,7 +175,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         val tagB = readTag(rhs)
         val xmlNsB = readXmlNs(rhs)
         if (tagA != tagB || xmlNsA != xmlNsB) {
-          performer.create(idb.mkId, idents(tagA), idents(xmlNsA))
+          performer.create(idb.mkId, idents(xmlNsA), idents(tagA))
           skipLoop(rhs)
           idb.incLevel()
           createLoop(lhs, performer)
@@ -204,7 +206,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         val xmlNsA = readXmlNs(lhs)
         idb.incId()
         skipText(rhs)
-        performer.create(idb.mkId, idents(tagA), idents(xmlNsA))
+        performer.create(idb.mkId, idents(xmlNsA), idents(tagA))
         idb.incLevel()
         createLoop(lhs, performer)
         idb.decLevel()
@@ -336,7 +338,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         case OpAttr =>
           idb.decLevelTmp()
           val attr = readAttr(x)
-          var xmlNs = idents(readAttrXmlNs(x))
+          val xmlNs = idents(readAttrXmlNs(x))
           performer.setAttr(idb.mkId, xmlNs, attr, readAttrText(x))
           idb.incLevel()
         case OpText =>
@@ -344,7 +346,9 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
           performer.createText(idb.mkId, readText(x))
         case OpOpen =>
           idb.incId()
-          performer.create(idb.mkId, idents(readTag(x)), idents(readXmlNs(x)))
+          val tagA = readTag(x)
+          val xmlNsA = readXmlNs(x)
+          performer.create(idb.mkId, idents(xmlNsA), idents(tagA))
           idb.incLevel()
         case OpLastAttr => // do nothing
       }
@@ -526,9 +530,9 @@ object DiffRenderContext {
   trait ChangesPerformer {
     def removeAttr(id: Id, xmlNs: String, name: String): Unit
     def remove(id: Id): Unit
-    def setAttr(id: Id,  xmlNs: String, name: String, value: String): Unit
+    def setAttr(id: Id, xmlNs: String, name: String, value: String): Unit
     def createText(id: Id, text: String): Unit
-    def create(id: Id, tag: String, xmlNs: String): Unit
+    def create(id: Id, xmlNs: String, tag: String): Unit
   }
 
   object DummyChangesPerformer extends ChangesPerformer {

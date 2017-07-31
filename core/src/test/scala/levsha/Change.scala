@@ -23,7 +23,7 @@ object Change {
       buffer += Change.setAttr(id.toList.map(_.toInt), name, xmlNs, value)
     def createText(id: Id, text: String): Unit =
       buffer += Change.createText(id.toList.map(_.toInt), text)
-    def create(id: Id, tag: String, xmlNs: String): Unit =
+    def create(id: Id, xmlNs: String, tag: String): Unit =
       buffer += Change.create(id.toList.map(_.toInt), tag, xmlNs)
     def result: Seq[Change] = buffer
   }

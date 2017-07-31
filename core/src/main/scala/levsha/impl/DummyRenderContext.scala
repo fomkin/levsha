@@ -4,12 +4,11 @@ import levsha.{RenderContext, XmlNs}
 
 /**
   * This render context does nothing
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
 class DummyRenderContext[-M] extends RenderContext[M] {
-  def openNode(name: String, xmlns: XmlNs): Unit = {}
+  def openNode(xmlns: XmlNs, name: String): Unit = {}
   def closeNode(name: String): Unit = {}
-  def setAttr(name: String, xmlNs: XmlNs, value: String): Unit = {}
+  def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {}
   def addTextNode(text: String): Unit = {}
   def addMisc(misc: M): Unit = {}
 }

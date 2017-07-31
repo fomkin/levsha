@@ -53,10 +53,10 @@ sealed trait TestDoc {
   def apply(rc: RenderContext[Nothing]): Unit = this match {
     case TestDoc.Text(text) => rc.addTextNode(text)
     case TestDoc.Element(name, attrs, xs) =>
-      rc.openNode(name, XmlNs.html)
+      rc.openNode(XmlNs.html, name)
       attrs foreach {
         case (attr, value) =>
-          rc.setAttr(attr, XmlNs.html, value)
+          rc.setAttr(XmlNs.html, attr, value)
       }
       xs.foreach(x => x(rc))
       rc.closeNode(name)
