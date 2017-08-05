@@ -42,8 +42,8 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  version := "0.5.0-SNAPSHOT",
-  scalaVersion := "2.12.2", // Need by IntelliJ
+  version := "0.5.0",
+  scalaVersion := "2.12.3", // Need by IntelliJ
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
@@ -94,7 +94,7 @@ lazy val dom = project
     name := "levsha-dom",
     //scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.1"
+      "org.scala-js" %%% "scalajs-dom" % "0.9.3"
     )
   )
 
@@ -121,4 +121,4 @@ lazy val root = project
     dom
   )
 
-crossScalaVersions := Seq("2.11.11", "2.12.2")
+crossScalaVersions := Seq("2.11.11", "2.12.3")
