@@ -8,20 +8,6 @@ import macrocompat.bundle
 
   import c.universe._
 
-  val notOptimizedWarningsEnabled = {
-    val propName = "levsha.macros.notOptimizedWarnings"
-    sys.props.get(propName)
-      .orElse(sys.env.get(propName))
-      .fold(false)(x => if (x == "true") true else false)
-  }
-
-  def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
-    case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
-      (xmlNs, toKebab(rawName))
-    case expr @ q"$conv(${rawName: Tree})" =>
-      (q"levsha.XmlNs.html", toKebab(rawName))
-  }
-
   def node[MT: WeakTypeTag](children: Tree*): Tree = {
 
     def optimize(tree: Tree): Tree = tree match {
@@ -128,6 +114,13 @@ import macrocompat.bundle
 
   // Utils
 
+  private def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
+    case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
+      (xmlNs, toKebab(rawName))
+    case expr @ q"$conv(${rawName: Tree})" =>
+      (q"levsha.XmlNs.html", toKebab(rawName))
+  }
+
   /**  Converts symbol 'camelCase to "kebab-case" */
   private def toKebab(tree: Tree): String = tree match {
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
@@ -156,5 +149,14 @@ import macrocompat.bundle
       case Typed(q"levsha.Document.Node.apply[$t] { rc => ..${ops: Seq[Tree]} }", _) => Some(ops)
       case _ => None
     }
+  }
+
+  // Misc
+
+  private val notOptimizedWarningsEnabled = {
+    val propName = "levsha.macros.notOptimizedWarnings"
+    sys.props.get(propName)
+      .orElse(sys.env.get(propName))
+      .fold(false)(x => if (x == "true") true else false)
   }
 }
