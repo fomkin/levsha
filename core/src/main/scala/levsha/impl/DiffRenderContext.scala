@@ -3,7 +3,7 @@ package levsha.impl
 import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
-import levsha.{Id, IdBuilder, RenderContext, XmlNs}
+import levsha._
 import levsha.impl.DiffRenderContext._
 import levsha.impl.internal.Op._
 
@@ -40,7 +40,7 @@ attr {
 */
 
 final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, savedBuffer: ByteBuffer)
-  extends RenderContext[M] {
+  extends StatefulRenderContext[M] {
 
   if ((initialBufferSize == 0) || ((initialBufferSize & (initialBufferSize - 1)) != 0))
     throw new IllegalArgumentException("initialBufferSize should be power of two")
@@ -225,6 +225,15 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
     lhs.rewind()
     rhs.rewind()
+  }
+
+  def currentId: Id = idb.mkId
+
+  def currentContainerId: Id = {
+    idb.decLevelTmp()
+    val id = idb.mkId
+    idb.incLevel()
+    id
   }
 
   private def closeAttrs(): Unit = {
