@@ -2,9 +2,6 @@ package levsha
 
 import java.util
 
-/**
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
-  */
 final class Id(private val array: Array[Short]) { lhs =>
 
   def level: Int = array.length
@@ -47,6 +44,9 @@ final class Id(private val array: Array[Short]) { lhs =>
 }
 
 object Id {
+
+  final val TopLevel = Id(1.toShort)
+
   def apply(xs: Short*): Id =
     new Id(xs.toArray)
 

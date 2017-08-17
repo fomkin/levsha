@@ -10,7 +10,7 @@ import scala.scalajs.js
 
 final class DomChangesPerformer(target: Element) extends ChangesPerformer {
 
-  private val index = mutable.Map[Id, Node](Id(1.toShort) -> target)
+  private val index = mutable.Map[Id, Node](Id.TopLevel -> target)
 
   private def create(id: Id)(createNewElement: => Node): Unit = {
     val parentId = id.parent
