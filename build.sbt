@@ -42,7 +42,7 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  version := "0.6.0",
+  version := "0.6.1",
   scalaVersion := "2.12.3", // Need by IntelliJ
   scalacOptions ++= Seq(
     "-deprecation",

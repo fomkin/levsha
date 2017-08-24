@@ -20,19 +20,21 @@ import macrocompat.bundle
       case extractConverter("miscToNode", value) => q"rc.addMisc($value)"
       // Advanced optimizations
       case extractConverter("seqToNode", q"($seq).map[$b, $that](${f: Function})($bf)") =>
+        val argName = f.vparams.head.name
         q"""
           val $$iter = $seq.iterator
           while ($$iter.hasNext) {
-            val ${f.vparams.head.name} = $$iter.next()
-            ${optimize(f.body)}
+            val $argName = $$iter.next()
+            ${optimize(cleanIdents(List("rc", argName.toString), f.body))}
           }
         """
       case extractConverter("optionToNode" | "optionToAttr", q"($opt).map[$b](${f: Function})") =>
+        val argName = f.vparams.head.name
         q"""
           val $$opt = $opt
           if ($$opt.nonEmpty) {
-            val ${f.vparams.head.name} = $$opt.get
-            ${optimize(f.body)}
+            val $argName = $$opt.get
+            ${optimize(cleanIdents(List("rc", argName.toString), f.body))}
           }
         """
       // Control flow optimization
@@ -81,7 +83,7 @@ import macrocompat.bundle
         }
         .flatMap {
           case (tree, _) =>
-            Seq(optimize(identCleaner.transform(tree)))
+            Seq(optimize(tree))
         }
     }
 
@@ -128,13 +130,16 @@ import macrocompat.bundle
   }
 
   /** Remove context binding from idents */
-  private object identCleaner extends Transformer {
-    override def transform(tree: Tree): Tree = {
-      tree match {
-        case Ident(TermName(name)) => Ident(TermName(name))
-        case _ => super.transform(tree)
+  private def cleanIdents(names: List[String], tree: Tree) = {
+    val cleaner = new Transformer {
+      override def transform(tree: Tree): Tree = {
+        tree match {
+          case Ident(TermName(name)) if names.contains(name) => Ident(TermName(name))
+          case _ => super.transform(tree)
+        }
       }
     }
+    cleaner.transform(tree)
   }
 
   private object extractConverter {
@@ -146,7 +151,8 @@ import macrocompat.bundle
 
   private object extractOpenNode {
     def unapply(tree: Tree): Option[Seq[Tree]] = tree match {
-      case Typed(q"levsha.Document.Node.apply[$t] { rc => ..${ops: Seq[Tree]} }", _) => Some(ops)
+      case Typed(q"levsha.Document.Node.apply[$t] { rc => ..${ops: Seq[Tree]} }", _) =>
+        Some(ops.map(cleanIdents(List("rc"), _)))
       case _ => None
     }
   }
