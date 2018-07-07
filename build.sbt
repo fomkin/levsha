@@ -43,7 +43,7 @@ val dontPublishSettings = Seq(
 val commonSettings = Seq(
   organization := "com.github.fomkin",
   version := "0.6.1",
-  scalaVersion := "2.12.3", // Need by IntelliJ
+  scalaVersion := "2.12.4", // Need by IntelliJ
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
@@ -121,4 +121,4 @@ lazy val root = project
     dom
   )
 
-crossScalaVersions := Seq("2.11.11", "2.12.3")
+crossScalaVersions := Seq("2.11.11", "2.12.4")
