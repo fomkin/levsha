@@ -1,4 +1,6 @@
-package levsha
+package levsha.dsl
+
+import levsha.{Document, QualifiedName, XmlNs}
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -12,7 +14,7 @@ import scala.language.implicitConversions
  *   )
  * }}}
  */
-class TemplateDsl[MiscType] {
+class SymbolDsl[MiscType] {
 
   import Document._
 
@@ -51,22 +53,22 @@ class TemplateDsl[MiscType] {
   implicit final class SymbolOps(symbol: Symbol) {
 
     def apply(children: Document[MiscType]*): Node[MiscType] =
-      macro TemplateDslMacro.node[MiscType]
+      macro SymbolDslMacro.node[MiscType]
 
     def /=(value: String): Attr[MiscType] =
-      macro TemplateDslMacro.attr[MiscType]
+      macro SymbolDslMacro.attr[MiscType]
   }
 
   implicit final class QualifiedNameOps(s: QualifiedName) {
 
     def apply(children: Document[MiscType]*): Node[MiscType] =
-      macro TemplateDslMacro.node[MiscType]
+      macro SymbolDslMacro.node[MiscType]
 
     def /=(value: String): Attr[MiscType] =
-      macro TemplateDslMacro.attr[MiscType]
+      macro SymbolDslMacro.attr[MiscType]
   }
 
-  val void = Empty
+  val void: Document.Empty.type = Empty
 
-  val ns = XmlNs
+  val ns: XmlNs.type = XmlNs
 }

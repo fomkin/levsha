@@ -1,5 +1,6 @@
 package levsha
 
+import levsha.dsl.SymbolDsl
 import levsha.events.{EventId, EventPhase}
 import levsha.impl.DiffRenderContext
 import org.scalajs.dom.Element
@@ -54,7 +55,7 @@ package object dom {
 
   private val roots = mutable.Map.empty[Element, Root]
 
-  val symbolDsl = new TemplateDsl[Misc]
+  val symbolDsl = new SymbolDsl[Misc]
 
   def render(target: Element)(node: Document.Node[Misc]): Unit = {
     val root = roots.getOrElseUpdate(target, new Root(target))

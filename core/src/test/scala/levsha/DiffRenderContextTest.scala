@@ -1,5 +1,6 @@
 package levsha
 
+import levsha.dsl.SymbolDsl
 import levsha.impl.DiffRenderContext
 import levsha.impl.DiffRenderContext.DummyChangesPerformer
 
@@ -10,7 +11,7 @@ import scala.language.implicitConversions
   */
 object DiffRenderContextTest extends utest.TestSuite {
 
-  val dsl = new TemplateDsl[Nothing]()
+  val dsl = new SymbolDsl[Nothing]()
 
   import utest.{TestableString, TestableSymbol => _}
   import Change._

@@ -48,7 +48,8 @@ val commonSettings = Seq(
     "-deprecation",
     "-feature",
     "-Xfatal-warnings",
-    "-Xexperimental"
+    "-Xexperimental",
+    "-unchecked"
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
@@ -66,6 +67,7 @@ lazy val core = crossProject
     libraryDependencies ++= Seq(
       // Macro compat
       "org.typelevel" %% "macro-compat" % "1.1.1" % "provided",
+      "com.lihaoyi" %%% "fastparse" % "1.0.0" % "provided",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
       compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
     )

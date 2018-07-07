@@ -1,10 +1,12 @@
-package levsha
+package levsha.dsl
+
+import levsha.Document
+import macrocompat.bundle
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
-import macrocompat.bundle
 
-@bundle class TemplateDslMacro(val c: blackbox.Context) {
+@bundle class SymbolDslMacro(val c: blackbox.Context) {
 
   import c.universe._
 

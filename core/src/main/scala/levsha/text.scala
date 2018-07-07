@@ -1,5 +1,6 @@
 package levsha
 
+import levsha.dsl.{SymbolDsl, XmlDsl}
 import levsha.impl.TextRenderContext
 
 /**
@@ -9,7 +10,9 @@ import levsha.impl.TextRenderContext
   */
 object text {
 
-  val symbolDsl = new TemplateDsl[Nothing]()
+  val symbolDsl = new SymbolDsl[Nothing]()
+
+  val xmlDsl = new XmlDsl[Nothing]()
 
   /**
     * Provides Text render context to make html string
