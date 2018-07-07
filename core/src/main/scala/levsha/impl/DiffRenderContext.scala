@@ -236,6 +236,13 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     id
   }
 
+  def subsequentId: Id = {
+    idb.incId()
+    val id = idb.mkId
+    idb.decId()
+    id
+  }
+
   private def closeAttrs(): Unit = {
     if (attrsOpened) {
       attrsOpened = false

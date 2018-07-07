@@ -42,6 +42,11 @@ final class IdBuilder(maxLevel: Int) {
     buffer.put(index, updated.toShort)
   }
 
+  def decId(): Unit = {
+    val updated = buffer.get(index) - 1
+    buffer.put(index, updated.toShort)
+  }
+
   def getLevel: Int = level
 
   def mkArray: Array[Short] = {
