@@ -13,6 +13,7 @@ import scala.reflect.macros.blackbox
   import fastparse.all.Parsed
 
   final val Namespaces: Map[String, c.Tree] = Map(
+    "xlink" -> q"levsha.XmlNs.xlink",
     "svg" -> q"levsha.XmlNs.svg",
     "html" -> q"levsha.XmlNs.svg",
     "mathml" -> q"levsha.XmlNs.mathml"
