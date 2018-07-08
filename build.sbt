@@ -18,8 +18,8 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
+  crossScalaVersions := Seq("2.11.11", "2.12.4"),
   git.useGitDescribe := true,
-  //scalaVersion := "2.12.4", // Need by IntelliJ
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
@@ -102,5 +102,3 @@ lazy val root = project
     eventsJS, eventsJVM,
     dom
   )
-
-crossScalaVersions := Seq("2.11.11", "2.12.4")
