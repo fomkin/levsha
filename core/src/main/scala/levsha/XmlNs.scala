@@ -7,6 +7,7 @@ final case class XmlNs(shortcut: String, uri: String) {
 }
 
 object XmlNs {
+  val xlink = XmlNs("xlink", "http://www.w3.org/1999/xlink")
   val html = XmlNs("html", "http://www.w3.org/1999/xhtml")
   val svg = XmlNs("svg", "http://www.w3.org/2000/svg")
   val mathml = XmlNs("mathml", "http://www.w3.org/1998/Math/MathML")
