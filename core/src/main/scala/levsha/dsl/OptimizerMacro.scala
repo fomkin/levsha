@@ -3,7 +3,7 @@ package levsha.dsl
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-trait Optimizer {
+trait OptimizerMacro {
 
   val c: blackbox.Context
 
@@ -53,14 +53,14 @@ trait Optimizer {
       q"$tree.apply(rc)"
   }
 
-  private object extractConverter {
+  object extractConverter {
     def unapply(tree: Tree): Option[(String, Tree)] = tree match {
       case Apply(Select(_, TermName(fun)), value :: Nil) => Some((fun, value))
       case _ => None
     }
   }
 
-  private object extractOpenNode {
+  object extractOpenNode {
     def unapply(tree: Tree): Option[Seq[Tree]] = tree match {
       case q"levsha.Document.Node.apply[$t] { rc => ..${ops: Seq[Tree]} }" =>
         Some(ops.map(cleanIdents(List("rc"), _)))
@@ -71,7 +71,7 @@ trait Optimizer {
   }
 
   // Remove context binding from idents
-  private def cleanIdents(names: List[String], tree: Tree) = {
+  def cleanIdents(names: List[String], tree: Tree): c.Tree = {
     val cleaner = new Transformer {
       override def transform(tree: Tree): Tree = {
         tree match {

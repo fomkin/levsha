@@ -1,11 +1,12 @@
 package levsha.dsl
 
+import fastparse.{all, core}
 import macrocompat.bundle
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-@bundle class XmlDslMacro(val c: blackbox.Context) extends Optimizer {
+@bundle class XmlDslMacro(val c: blackbox.Context) extends OptimizerMacro {
 
   import XmlDslMacro.{Position, _}
   import c.universe._
@@ -22,6 +23,10 @@ import scala.reflect.macros.blackbox
     private val MT = weakTypeOf[M]
     private val xmlPos = templateTree.pos
     private val includes = args.toVector
+    private val includesIndex = includes
+      .zipWithIndex
+      .map { case (tree, i) => show(tree) -> i}
+      .toMap
     private val stringParts = {
       val Apply(_, List(Apply(_, rawStringParts))) = templateTree
       rawStringParts.map { case Literal(Constant(s: String)) => s }
@@ -33,8 +38,8 @@ import scala.reflect.macros.blackbox
         case (_, (x, 0)) => x
         case (acc, (x, i)) =>
           val j = i - 1
-          val s = j.toString
           val include = includes(j)
+          val s = includesIndex(show(include)).toString
           val d = include.pos.end - include.pos.start - s.length
           s"$acc@{$s${" " * d}}$x"
       }
@@ -48,29 +53,33 @@ import scala.reflect.macros.blackbox
       includes(k.trim.toInt)
     }
 
-    def resolveNs(ns: Option[Value], onlyLiterals: Boolean = false) = ns match {
-      case Some(Value.Include(pos, _)) if onlyLiterals =>
-        c.abort(relativePos(pos), s"literal expected")
+    def resolveNs(ns: Option[Value]) = ns match {
+      case Some(Value.Composite(pos, _)) =>
+        c.abort(relativePos(pos), s"Composite namespaces are not supported")
       case Some(Value.Include(pos, key)) =>
-        val x = resolveKey(key)
-        if (x.tpe =:= typeOf[levsha.XmlNs]) x
-        else c.abort(relativePos(pos), s"XmlNs expected but ${x.tpe} found")
+        resolveKey(key) match {
+          case x if x.tpe =:= typeOf[levsha.XmlNs] => x
+          case extractConverter("xmlNsToNode", x) if x.tpe =:= typeOf[levsha.XmlNs] => x
+          case x => c.abort(relativePos(pos), s"XmlNs expected but ${x.tpe} found")
+        }
       case Some(Value.Literal(pos, value)) =>
         Namespaces.getOrElse(value, c.abort(relativePos(pos), s"invalid xmlns: '$value'"))
       case None => q"levsha.XmlNs.html" // is default namespace
     }
 
-    def resolveString(v: Value, onlyLiterals: Boolean = false) = v match {
-      case Value.Include(pos, _) if onlyLiterals =>
-        c.abort(relativePos(pos), s"literal expected")
+    def resolveString(v: Value): Tree = v match {
       case Value.Literal(_, s) => q"$s"
       case Value.Include(pos, key) =>
-        val x = resolveKey(key)
-        if (x.tpe =:= typeOf[String]) x
-        else c.abort(relativePos(pos), s"String expected but ${x.tpe} found")
+        resolveKey(key) match {
+          case x if x.tpe =:= typeOf[String] => x
+          case extractConverter("stringToNode", x) if x.tpe =:= typeOf[String] => x
+          case x => c.abort(relativePos(pos), s"String expected but ${x.tpe} found")
+        }
+      case Value.Composite(_, xs) =>
+        xs.map(resolveString).reduce((a, b) => q"$a + $b")
     }
 
-    def resolveAttr(attr: Attribute) = attr match {
+    def resolveAttr(attr: Attribute): Tree = attr match {
       case Attribute.Literal(_, QName(_, ns, name), value) =>
         val rns = resolveNs(ns)
         val n = resolveString(name)
@@ -79,7 +88,7 @@ import scala.reflect.macros.blackbox
       case Attribute.Include(pos, key) =>
         val x = resolveKey(key)
         if (x.tpe =:= weakTypeOf[levsha.Document.Attr[M]]) x
-        else c.abort(relativePos(pos), s"attribute expected but ${x.tpe} found")
+        else c.abort(relativePos(pos), s"Attribute expected but ${x.tpe} found")
     }
 
     def resolveXml(xml: Xml): Tree = xml match {
@@ -88,16 +97,14 @@ import scala.reflect.macros.blackbox
       case Xml.Comment(_, _) => EmptyTree
       case Xml.Include(pos, key) =>
         val x = resolveKey(key)
-//        println(x.tpe)
-//        if (x.tpe =:= weakTypeOf[String]) q"new levsha.dsl.SymbolDsl().stringToNode($x)"
-//        else if (x.tpe =:= weakTypeOf[Iterable[levsha.Document.Node[M]]]) q"new levsha.dsl.SymbolDsl().seqToNode($x)"
-//        else
         if (x.tpe =:= weakTypeOf[levsha.Document.Node[M]]) x
-        else c.abort(relativePos(pos), s"node expected but ${x.tpe} found")
+        else c.abort(relativePos(pos), s"Node expected but ${x.tpe} found")
       case Xml.Node(_, QName(_, ns, name), attrs, children) =>
-        val rns = resolveNs(ns, onlyLiterals = true)
-        val n = resolveString(name, onlyLiterals = true)
-        val ops = (attrs.map(resolveAttr) ++ children.map(resolveXml)).map(optimize)
+        val rns = resolveNs(ns)
+        val n = resolveString(name)
+        val ops = (attrs.map(resolveAttr) ++ children.map(resolveXml))
+          .filter(_.nonEmpty)
+          .map(c.untypecheck _ andThen optimize)
         q"""
           levsha.Document.Node.apply[$MT] { rc =>
             rc.openNode($rns, $n)
@@ -110,15 +117,13 @@ import scala.reflect.macros.blackbox
 
   def xmlStringContextImpl[M: c.WeakTypeTag](args: c.Tree*): c.Tree = {
     val compiler = new Compiler[M](c.prefix.tree, args)
-    val xx= xmlParser.node.parse(compiler.template) match {
+    xmlParser.node.parse(compiler.template) match {
       case Parsed.Success(value, _) => compiler.resolveXml(value)
       case Parsed.Failure(_, index, e) =>
         val tplPos = Position(index, index + 20)
         val pos = compiler.relativePos(tplPos)
         c.abort(pos, s"Syntax error: ${e.traced.expected} expected")
     }
-    println(show(xx))
-    xx
   }
 
   def attrStringContextImpl[M: c.WeakTypeTag](args: c.Tree*): c.Tree = {
@@ -139,15 +144,18 @@ object XmlDslMacro {
   case class Position(start: Int, end: Int)
 
   sealed trait Value {
+    def pos: Position
     def mkString: String = this match {
       case Value.Literal(_, value) => value
       case Value.Include(_, value) => s"@{$value}"
+      case Value.Composite(_, xs) => xs.map(_.mkString).mkString
     }
   }
 
   object Value {
     case class Literal(pos: Position, value: String) extends Value
     case class Include(pos: Position, key: String) extends Value
+    case class Composite(pos: Position, xs: Seq[Value]) extends Value
   }
 
   case class QName(pos: Position, namespace: Option[Value], name: Value) {
@@ -182,25 +190,33 @@ object XmlDslMacro {
       case (start, value, end) => (Position(start, end), value)
     }
 
-    val `<` = P("<")
+    val `<`: Parser[Unit] = P("<")
 
-    val `@{` = P("@{")
+    val `@{`: Parser[Unit] = P("@{")
 
     val `"`: Parser[Unit] = P("\"")
 
     val space: Parser[Unit] = P(CharIn("\t\r\n ").rep)
 
-    val number: Parser[Unit] = P(CharIn('0' to '9').rep)
+    val `${...}`: Parser[(Position, String)] = P(Index ~ `@{` ~ (!"}" ~ AnyChar).rep(min=1).! ~ "}" ~ Index).map(pos)
 
-    val include: Parser[(Position, String)] = P(Index ~ `@{` ~ (!"}" ~ AnyChar).rep(min=1).! ~ "}" ~ Index).map(pos)
-
-    val identifier: P[Value] = {
-      val `included indentifier` = include.map(Value.Include.tupled)
-      val `literal` = (Index ~ CharIn('a' to 'z', 'A' to 'Z', '0' to '9', "-_").rep.! ~ Index)
-        .map(pos)
-        .map(Value.Literal.tupled)
-      P(`included indentifier` | `literal`)
+    def value(chars: Parser[Unit]): Parser[Value] = {
+      val literal = P(Index ~ (!`@{` ~ chars).rep(min = 1).! ~ Index).map(pos)
+      P(`${...}`.map(Value.Include.tupled) | literal.map(Value.Literal.tupled))
+        .rep(min = 1)
+        .map(_.toList)
+        .map {
+          case (x: Value.Literal) :: Nil => x
+          case (x: Value.Include) :: Nil => x
+          case xs if xs.forall(_.isInstanceOf[Value.Literal]) =>
+            Value.Literal(Position(xs.head.pos.start, xs.last.pos.end), xs.mkString)
+          case xs =>
+            Value.Composite(Position(xs.head.pos.start, xs.last.pos.end), xs)
+        }
+        
     }
+
+    val identifier: P[Value] = value(CharIn('a' to 'z', 'A' to 'Z', '0' to '9', "-_"))
 
     val `qualified name`: Parser[QName] = P(Index ~ ((identifier ~ ":").? ~ identifier) ~ Index)
       .map(pos)
@@ -209,13 +225,11 @@ object XmlDslMacro {
           QName(p, ns, n)
       }
 
-    val attribute: Parser[Attribute] = {
+    val attribute: Parser[Attribute] = P {
 
       val `attribute value` = P(
-        include.map(Value.Include.tupled) |
-          (Index ~ `"` ~ (!`"` ~ AnyChar).rep.! ~ `"` ~ Index)
-            .map(pos)
-            .map(Value.Literal.tupled)
+        `${...}`.map(Value.Include.tupled)
+          | (`"` ~ value(!`"` ~ AnyChar) ~ `"`)
       )
 
       val literal = P(Index ~ (`qualified name` ~ "=" ~ `attribute value`) ~ Index)
@@ -224,24 +238,24 @@ object XmlDslMacro {
           case (p, (qn, value)) =>
             Attribute.Literal(p, qn, value)
         }
-      
-      P(literal | include.map(Attribute.Include.tupled))
+
+      literal | `${...}`.map(Attribute.Include.tupled)
     }
 
-    val `node include`: Parser[Xml.Include] = P(include.map(Xml.Include.tupled))
+    val `node include`: Parser[Xml.Include] = P(`${...}`.map(Xml.Include.tupled))
 
     val text: Parser[Xml.Text] = P(Index ~ (!`<` ~ !`@{` ~/ AnyChar).rep.! ~ Index)
       .map(pos)
       .map(Xml.Text.tupled)
-
+      
     val cdata: Parser[Xml.CData] = P(Index ~ "<![CDATA[" ~/ (!"]]>" ~ AnyChar).rep.! ~ "]]>" ~ Index)
       .map(pos)
       .map(Xml.CData.tupled)
-
+      
     val comment: Parser[Xml.Comment] = P(Index ~ "<!--" ~/ (!"-->" ~ AnyChar).rep.! ~ "-->" ~ Index)
       .map(pos)
       .map(Xml.Comment.tupled)
-
+      
     lazy val node: Parser[Xml.Node] = P {
 
       val leftTag = P(`<` ~ `qualified name` ~ (space ~ attribute ~ space).rep ~ ">" )
@@ -251,7 +265,7 @@ object XmlDslMacro {
 
       for {
         (s, (name, attrs)) <- Index ~ leftTag
-        (children, e) <- (space ~ !"</" ~ `node child` ~ space).rep ~ rightTag(name) ~ Index
+        (children, e) <- (!"</" ~ `node child`).rep ~ rightTag(name) ~ Index
       } yield {
         Xml.Node(Position(s, e), name, attrs, children)
       }

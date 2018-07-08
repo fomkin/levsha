@@ -6,7 +6,7 @@ import macrocompat.bundle
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-@bundle class SymbolDslMacro(val c: blackbox.Context) extends Optimizer {
+@bundle class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
 
   import c.universe._
 
@@ -70,7 +70,8 @@ import scala.reflect.macros.blackbox
   }
 
   def xmlNsCreateQualifiedName(symbol: Tree): Tree = {
-    q"levsha.QualifiedName(${c.prefix.tree}, $symbol)"
+    val q"$conv(${rawName: Tree})" = c.prefix.tree
+    q"levsha.QualifiedName($rawName, $symbol)"
   }
 
   // Utils
