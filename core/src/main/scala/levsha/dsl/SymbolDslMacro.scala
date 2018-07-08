@@ -1,0 +1,93 @@
+package levsha.dsl
+
+import levsha.Document
+import macrocompat.bundle
+
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
+
+@bundle class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
+
+  import c.universe._
+
+  def node[MT: WeakTypeTag](children: Tree*): Tree = {
+
+    val ops = {
+      children
+        // Check one of children has ambiguous Document type
+        // Children should be Attr, Node or Empty
+        .map { child =>
+          // I've encountered with strange behavior in macros.
+          // When I give if expression to def macro,
+          // 1) Macro invokes twice
+          // 2) On first invoke if expression has
+          //    unexpected type: if (true) A(1) else A(2) has type X[Int] but I expect A[Int]
+          //    where sealed trait X[-T]; case class A[-T](v: T) extends X[T].
+          // Reproduced in 2.11.11 and 2.12.2
+          // Hope https://issues.scala-lang.org/browse/SI-5464 will not touch this
+          val utc = c.untypecheck(child)
+          val tc = c.typecheck(utc)
+          if (tc.tpe =:= weakTypeOf[Document[MT]])
+            c.error(tc.pos, "Should be node, attribute or void")
+          // Save both untypechecked tree and typechecked tree.
+          // Untypechecked tree can be saved for future use
+          // Typechecked tree will be used right no to decide
+          // how not transform the tree.
+          (utc, tc)
+        }
+        // Attributes always on top
+        .sortBy(_._2.tpe) { (x, y) =>
+          if (x =:= weakTypeOf[Document.Attr[MT]]) -1
+          else 0
+        }
+        .flatMap {
+          case (tree, _) =>
+            Seq(optimize(tree))
+        }
+    }
+
+    val MT = weakTypeOf[MT]
+    val (nodeXmlNs, nodeName) = unfoldQualifiedName(c.prefix.tree)
+
+    q"""
+      levsha.Document.Node.apply[$MT] { rc =>
+        rc.openNode($nodeXmlNs, $nodeName)
+        ..$ops
+        rc.closeNode($nodeName)
+      }
+    """
+  }
+
+  def attr[MT: WeakTypeTag](value: Tree): Tree = {
+    val MT = weakTypeOf[MT]
+    val (xmlNs, attr) = unfoldQualifiedName(c.prefix.tree)
+
+    q"""
+      levsha.Document.Attr.apply[$MT] { rc =>
+        rc.setAttr($xmlNs, $attr, $value)
+      }
+    """
+  }
+
+  def xmlNsCreateQualifiedName(symbol: Tree): Tree = {
+    val q"$conv(${rawName: Tree})" = c.prefix.tree
+    q"levsha.QualifiedName($rawName, $symbol)"
+  }
+
+  // Utils
+
+  private def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
+    case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
+      (xmlNs, toKebab(rawName))
+    case expr @ q"$conv(${rawName: Tree})" =>
+      (q"levsha.XmlNs.html", toKebab(rawName))
+  }
+
+  /**  Converts symbol 'camelCase to "kebab-case" */
+  private def toKebab(tree: Tree): String = tree match {
+    case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
+    case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
+  }
+
+  // Misc
+}

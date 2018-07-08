@@ -1,20 +1,10 @@
-package levsha
+package levsha.dsl
 
-import scala.language.experimental.macros
 import scala.language.implicitConversions
 
-/**
- * Symbol based DSL allows to define documents
- * {{{
- *   'body(
- *     'h1(class /= "title", "Hello World"),
- *     'p("Lorem ipsum dolor")
- *   )
- * }}}
- */
-class TemplateDsl[MiscType] {
+trait Converters[MiscType] {
 
-  import Document._
+  import levsha.Document._
 
   /** Converts String to text document node */
   implicit def stringToNode(value: String): Node[MiscType] =
@@ -48,25 +38,4 @@ class TemplateDsl[MiscType] {
   implicit def arbitraryOptionToNode[T](value: Option[T])(implicit ev: T => Node[MiscType]): Node[MiscType] =
     Node(rc => if (value.nonEmpty) ev(value.get).apply(rc))
 
-  implicit final class SymbolOps(symbol: Symbol) {
-
-    def apply(children: Document[MiscType]*): Node[MiscType] =
-      macro TemplateDslMacro.node[MiscType]
-
-    def /=(value: String): Attr[MiscType] =
-      macro TemplateDslMacro.attr[MiscType]
-  }
-
-  implicit final class QualifiedNameOps(s: QualifiedName) {
-
-    def apply(children: Document[MiscType]*): Node[MiscType] =
-      macro TemplateDslMacro.node[MiscType]
-
-    def /=(value: String): Attr[MiscType] =
-      macro TemplateDslMacro.attr[MiscType]
-  }
-
-  val void = Empty
-
-  val ns = XmlNs
 }

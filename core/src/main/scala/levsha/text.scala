@@ -1,6 +1,7 @@
 package levsha
 
-import levsha.impl.TextRenderContext
+import levsha.dsl.{SymbolDsl, XmlDsl}
+import levsha.impl.{TextPrettyPrintingConfig, TextRenderContext}
 
 /**
   * Default template context and dsl
@@ -9,7 +10,9 @@ import levsha.impl.TextRenderContext
   */
 object text {
 
-  val symbolDsl = new TemplateDsl[Nothing]()
+  val symbolDsl = new SymbolDsl[Nothing]()
+
+  val xmlDsl = new XmlDsl[Nothing]()
 
   /**
     * Provides Text render context to make html string
@@ -20,8 +23,9 @@ object text {
     * }
     * }}}
     */
-  def renderHtml(f: Document.Node[Nothing]): String = {
-    val renderContext = new TextRenderContext()
+  def renderHtml(f: Document.Node[Nothing],
+                 prettyPrinting: TextPrettyPrintingConfig = TextPrettyPrintingConfig.default): String = {
+    val renderContext = new TextRenderContext(prettyPrinting)
     f(renderContext)
     renderContext.mkString
   }
