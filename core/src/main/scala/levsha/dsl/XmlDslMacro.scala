@@ -1,16 +1,14 @@
 package levsha.dsl
 
-import fastparse.{all, core}
 import macrocompat.bundle
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-@bundle class XmlDslMacro(val c: blackbox.Context) {
+@bundle class XmlDslMacro(val c: blackbox.Context) extends Optimizer {
 
-  import c.universe._
   import XmlDslMacro.{Position, _}
-
+  import c.universe._
   import fastparse.all.Parsed
 
   final val Namespaces: Map[String, c.Tree] = Map(
@@ -21,29 +19,24 @@ import scala.reflect.macros.blackbox
 
   class Compiler[M: c.WeakTypeTag](templateTree: c.Tree, args: Seq[c.Tree]) {
 
-    val mt = weakTypeOf[M]
-    val xmlPos = templateTree.pos
-    val includes = args.toVector
-      .map(x => show(x) -> x)
-      .toMap
-    val stringParts = {
+    private val MT = weakTypeOf[M]
+    private val xmlPos = templateTree.pos
+    private val includes = args.toVector
+    private val stringParts = {
       val Apply(_, List(Apply(_, rawStringParts))) = templateTree
       rawStringParts.map { case Literal(Constant(s: String)) => s }
     }
 
-    val template = stringParts
+    val template: String = stringParts
       .zipWithIndex
       .foldLeft("") {
         case (_, (x, 0)) => x
         case (acc, (x, i)) =>
           val j = i - 1
-          args(j) match {
-            case Literal(Constant(z: String)) => s"$acc$z$x"
-            case include =>
-              val s = show(include)
-              val d = include.pos.end - include.pos.start - s.length
-              s"$acc@{$s${" " * d}}$x"
-          }
+          val s = j.toString
+          val include = includes(j)
+          val d = include.pos.end - include.pos.start - s.length
+          s"$acc@{$s${" " * d}}$x"
       }
 
     def relativePos(p: Position) = xmlPos
@@ -51,13 +44,13 @@ import scala.reflect.macros.blackbox
       .withPoint(xmlPos.start + p.start)
       .withStart(xmlPos.start + p.start)
 
-    def resolveKey(k: String) = {
-      val p = c.typecheck(c.untypecheck(includes(k.trim)))
-      println(show(p))
-      p
+    def resolveKey(k: String): c.Tree = {
+      includes(k.trim.toInt)
     }
 
-    def resolveNs(ns: Option[Value]) = ns match {
+    def resolveNs(ns: Option[Value], onlyLiterals: Boolean = false) = ns match {
+      case Some(Value.Include(pos, _)) if onlyLiterals =>
+        c.abort(relativePos(pos), s"literal expected")
       case Some(Value.Include(pos, key)) =>
         val x = resolveKey(key)
         if (x.tpe =:= typeOf[levsha.XmlNs]) x
@@ -67,7 +60,9 @@ import scala.reflect.macros.blackbox
       case None => q"levsha.XmlNs.html" // is default namespace
     }
 
-    def resolveString(v: Value) = v match {
+    def resolveString(v: Value, onlyLiterals: Boolean = false) = v match {
+      case Value.Include(pos, _) if onlyLiterals =>
+        c.abort(relativePos(pos), s"literal expected")
       case Value.Literal(_, s) => q"$s"
       case Value.Include(pos, key) =>
         val x = resolveKey(key)
@@ -80,46 +75,50 @@ import scala.reflect.macros.blackbox
         val rns = resolveNs(ns)
         val n = resolveString(name)
         val v = resolveString(value)
-        q"levsha.Document.Attr.apply[$mt]{rc=>rc.setAttr($rns,$n,$v)}"
+        q"levsha.Document.Attr.apply[$MT](rc => rc.setAttr($rns,$n,$v))"
       case Attribute.Include(pos, key) =>
-        //          println(pos)
         val x = resolveKey(key)
         if (x.tpe =:= weakTypeOf[levsha.Document.Attr[M]]) x
         else c.abort(relativePos(pos), s"attribute expected but ${x.tpe} found")
     }
 
     def resolveXml(xml: Xml): Tree = xml match {
-      case Xml.CData(_, s) => q"levsha.Document.Node.apply[$mt]{rc=>rc.addTextNode($s)}"
-      case Xml.Text(_, s) => q"levsha.Document.Node.apply[$mt]{rc=>rc.addTextNode($s)}"
-      case Xml.Comment(_, _) => q"levsha.Document.Node.apply[$mt]{rc=>()}"
+      case Xml.CData(_, s) => q"levsha.Document.Node.apply[$MT] { rc => rc.addTextNode($s) }"
+      case Xml.Text(_, s) => q"levsha.Document.Node.apply[$MT]{ rc => rc.addTextNode($s) }"
+      case Xml.Comment(_, _) => EmptyTree
       case Xml.Include(pos, key) =>
         val x = resolveKey(key)
+//        println(x.tpe)
+//        if (x.tpe =:= weakTypeOf[String]) q"new levsha.dsl.SymbolDsl().stringToNode($x)"
+//        else if (x.tpe =:= weakTypeOf[Iterable[levsha.Document.Node[M]]]) q"new levsha.dsl.SymbolDsl().seqToNode($x)"
+//        else
         if (x.tpe =:= weakTypeOf[levsha.Document.Node[M]]) x
         else c.abort(relativePos(pos), s"node expected but ${x.tpe} found")
       case Xml.Node(_, QName(_, ns, name), attrs, children) =>
-        val rns = resolveNs(ns)
-        val n = resolveString(name)
-        def applyRc(x: Tree) = q"$x.apply(rc)"
+        val rns = resolveNs(ns, onlyLiterals = true)
+        val n = resolveString(name, onlyLiterals = true)
+        val ops = (attrs.map(resolveAttr) ++ children.map(resolveXml)).map(optimize)
         q"""
-            levsha.Document.Node.apply[$mt] { rc =>
-              rc.openNode($rns, $n)
-              ..${attrs.map(resolveAttr).map(applyRc)}
-              ..${children.map(resolveXml).map(applyRc)}
-              rc.closeNode($n)
-            }
-          """
+          levsha.Document.Node.apply[$MT] { rc =>
+            rc.openNode($rns, $n)
+            ..$ops
+            rc.closeNode($n)
+          }
+        """
     }
   }
 
   def xmlStringContextImpl[M: c.WeakTypeTag](args: c.Tree*): c.Tree = {
     val compiler = new Compiler[M](c.prefix.tree, args)
-    xmlParser.node.parse(compiler.template) match {
+    val xx= xmlParser.node.parse(compiler.template) match {
       case Parsed.Success(value, _) => compiler.resolveXml(value)
       case Parsed.Failure(_, index, e) =>
         val tplPos = Position(index, index + 20)
         val pos = compiler.relativePos(tplPos)
         c.abort(pos, s"Syntax error: ${e.traced.expected} expected")
     }
+    println(show(xx))
+    xx
   }
 
   def attrStringContextImpl[M: c.WeakTypeTag](args: c.Tree*): c.Tree = {
@@ -245,10 +244,10 @@ object XmlDslMacro {
 
     lazy val node: Parser[Xml.Node] = P {
 
-      val leftTag = P(`<` ~/ `qualified name` ~ (space ~ attribute ~ space).rep ~ ">" )
+      val leftTag = P(`<` ~ `qualified name` ~ (space ~ attribute ~ space).rep ~ ">" )
 
       def rightTag(name: QName): Parser[Unit]=
-        P( "</>" | "</" ~/ name.mkString ~ ">" )
+        P( "</>" | "</" ~ name.mkString ~ ">" )
 
       for {
         (s, (name, attrs)) <- Index ~ leftTag
@@ -258,7 +257,7 @@ object XmlDslMacro {
       }
     }
 
-    lazy val `node child`: Parser[Xml] = P(`node include` | comment | cdata | text | node)
+    lazy val `node child`: Parser[Xml] = P(`node include` | comment | cdata | node | text)
   }
 
 }
