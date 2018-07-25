@@ -33,6 +33,25 @@ val html = renderHtml {
 println(html)
 ```
 
+or 
+
+```scala
+import levsha.text.xmlDsl._
+
+val lis = features map { feature =>
+  xml"""<li class="item">$feature</>"""
+}      
+
+val html = renderHtml {
+  xml"""
+    <body>
+      <div class="title", "Hello, I'm Levsha!">
+      <ul>$lis</ul>
+    </body>      
+  """
+}
+```
+
 ```html
 <body>
   <div class="title">Hello, I'm Levsha!</div>
@@ -75,7 +94,7 @@ Levsha's memory usage is constant.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.6.1"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.7.1"
 ```
 
 ```scala

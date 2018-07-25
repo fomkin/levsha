@@ -1,4 +1,5 @@
 import xerial.sbt.Sonatype._
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 val unusedRepo = Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
@@ -18,7 +19,7 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.11.11", "2.12.4"),
+  crossScalaVersions := Seq("2.11.12", "2.12.6"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
@@ -34,7 +35,7 @@ val commonSettings = Seq(
   )
 )
 
-lazy val core = crossProject
+lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .enablePlugins(GitVersioning)
   .settings(commonSettings: _*)
@@ -53,7 +54,7 @@ lazy val core = crossProject
 lazy val coreJS = core.js
 lazy val coreJVM = core.jvm
 
-lazy val events = crossProject
+lazy val events = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .enablePlugins(GitVersioning)
   .settings(commonSettings: _*)

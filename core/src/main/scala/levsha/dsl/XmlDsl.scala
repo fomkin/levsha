@@ -17,7 +17,7 @@ class XmlDsl[M] extends Converters[M] {
     Document.Node(_ => ()) // stub. do nothing
 
   implicit final class XmlStringContext(val sc: StringContext) {
-    def attr(args: Any*): Document.Attr[M] =
+    def attr(args: Document[M]*): Document.Attr[M] =
       macro XmlDslMacro.attrStringContextImpl[M]
     def html(args: Document[M]*): Document.Node[M] =
       macro XmlDslMacro.xmlStringContextImpl[M]

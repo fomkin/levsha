@@ -52,7 +52,7 @@ object XmlDslTest extends TestSuite {
     "node with iterable body" - {
       val xs = Seq(1, 2, 3)
       val document =
-        xml"""<ul>${xs.map { x => xml"<li>${x.toString}</li>"}}</ul>"""
+        xml"""<ul>${xs.map { x => xml"<li>${x.toString()}</li>" }}</ul>"""
       val result = renderHtml(document, TextPrettyPrintingConfig.noPrettyPrinting)
       assert(result == """<ul><li>1</li><li>2</li><li>3</li></ul>""")
     }
@@ -77,7 +77,7 @@ object XmlDslTest extends TestSuite {
     }
     "node with variable list of attrs" - {
       val xs = Seq(1, 2, 3)
-      val attrs = xs.map(_.toString).map(x => attr"""data-n$x="x-$x"""")
+      val attrs = xs.map(_.toString()).map(x => attr"""data-n$x="x-$x"""")
       val document = xml"<div $attrs>Cow</div>"
       val result = renderHtml(document, TextPrettyPrintingConfig.noPrettyPrinting)
       assert(result == """<div data-n1="x-1" data-n2="x-2" data-n3="x-3">Cow</div>""")
