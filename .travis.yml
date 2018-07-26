@@ -5,4 +5,4 @@ jdk:
 scala:
   - 2.11.12
   - 2.12.6
-script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 -J-XX:MaxPermSize=1024M test
+script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 -J-XX:MaxPermSize=1024M headerCheck test

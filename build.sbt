@@ -1,5 +1,5 @@
 import xerial.sbt.Sonatype._
-import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
+import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val unusedRepo = Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
@@ -8,13 +8,16 @@ val publishSettings = Seq(
   publishArtifact in Test := false,
   publishMavenStyle := true,
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  headerLicense := Some(HeaderLicense.ALv2("2017-2018", "Aleksey Fomkin")),
+  excludeFilter.in(headerSources) := HiddenFileFilter || "IntStringMap.scala",
   sonatypeProjectHosting := Some(GitHubHosting("fomkin", "levsha", "Aleksey Fomkin", "aleksey.fomkin@gmail.com"))
 )
 
 val dontPublishSettings = Seq(
   publish := {},
   publishTo := unusedRepo,
-  publishArtifact := false
+  publishArtifact := false,
+  headerLicense := None
 )
 
 val commonSettings = Seq(
@@ -103,3 +106,7 @@ lazy val root = project
     eventsJS, eventsJVM,
     dom
   )
+
+// Don't use it for root project
+// For some unknown reason `headerLicense := None` doesn't work.
+disablePlugins(HeaderPlugin)
