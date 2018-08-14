@@ -1,4 +1,6 @@
 # Levsha
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffomkin%2Flevsha.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffomkin%2Flevsha?ref=badge_shield)
+
 
 Levsha is a fast HTML template engine and Scala eDSL. It works without additional memory allocation. 
 Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
@@ -265,3 +267,7 @@ parameter. For example `sbt -Dlevsha.macros.notOptimizedWarnings=true`
 ## Worthy to note
 
 1. [The Tale of Cross-eyed Lefty from Tula and the Steel Flea](https://en.wikipedia.org/wiki/The_Tale_of_Cross-eyed_Lefty_from_Tula_and_the_Steel_Flea)
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffomkin%2Flevsha.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffomkin%2Flevsha?ref=badge_large)
