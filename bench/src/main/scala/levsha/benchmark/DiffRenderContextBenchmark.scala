@@ -434,6 +434,7 @@ class DiffRenderContextBenchmark {
     )
 
     a(renderContext)
+    renderContext.diff(DiffRenderContext.DummyChangesPerformer)
     renderContext.swap()
     b(renderContext)
     renderContext.diff(DiffRenderContext.DummyChangesPerformer)
