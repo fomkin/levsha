@@ -22,7 +22,7 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.11.12", "2.12.6"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",

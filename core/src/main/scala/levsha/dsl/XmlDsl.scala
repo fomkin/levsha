@@ -24,7 +24,7 @@ import scala.language.implicitConversions
 class XmlDsl[M] extends Converters[M] {
 
   // Hack. `xml` string interpolator takes documents. Types
-  // suck as String, Option or Iterable
+  // such as String, Option or Iterable
   // legally wraps into Node by Converters.
   // In XML-dsl we need to allow custom XML namespaces
   // so levsha.Xml also should be wrapped to node,

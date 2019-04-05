@@ -37,6 +37,7 @@ import scala.reflect.macros.blackbox
 
   class Compiler[M: c.WeakTypeTag](templateTree: c.Tree, args: Seq[c.Tree]) {
 
+    private lazy val defaultNs = q"levsha.XmlNs.html"
     private val MT = weakTypeOf[M]
     private val xmlPos = templateTree.pos
     private val includes = args.toVector
@@ -72,16 +73,24 @@ import scala.reflect.macros.blackbox
 
     def resolveNs(ns: Option[Value]) = ns match {
       case Some(Value.Composite(pos, _)) =>
-        c.abort(relativePos(pos), s"Composite namespaces are not supported")
+        c.error(relativePos(pos), s"Composite namespaces are not supported")
+        defaultNs
       case Some(Value.Include(pos, key)) =>
         resolveKey(key) match {
           case x if x.tpe =:= typeOf[levsha.XmlNs] => x
           case extractConverter("xmlNsToNode", x) if x.tpe =:= typeOf[levsha.XmlNs] => x
-          case x => c.abort(relativePos(pos), s"XmlNs expected but ${x.tpe} found")
+          case x =>
+            c.error(relativePos(pos), s"XmlNs expected but ${x.tpe} found")
+            defaultNs
         }
       case Some(Value.Literal(pos, value)) =>
-        Namespaces.getOrElse(value, c.abort(relativePos(pos), s"invalid xmlns: '$value'"))
-      case None => q"levsha.XmlNs.html" // is default namespace
+        Namespaces.get(value) match {
+          case Some(selectedNs) => selectedNs
+          case None =>
+            c.error(relativePos(pos), s"invalid xmlns: '$value'")
+            defaultNs
+        }
+      case None => defaultNs
     }
 
     def resolveString(v: Value): Tree = v match {
@@ -115,7 +124,68 @@ import scala.reflect.macros.blackbox
       case Xml.Include(pos, key) =>
         val x = resolveKey(key)
         if (x.tpe =:= weakTypeOf[levsha.Document.Node[M]]) x
-        else c.abort(relativePos(pos), s"Node expected but ${x.tpe} found")
+        else {
+          c.error(relativePos(pos), s"Node expected but ${x.tpe} found")
+          EmptyTree
+        }
+      case Xml.Node(nodePos, QName(_, Some(Value.Literal(_, "sf")), Value.Literal(fnPos, fn)), allAttrs, children) =>
+        val ft = TermName(fn)
+        // Try to filed method in the scope
+        val methodTree = c.typecheck(q"$ft _", silent = true) match {
+          case EmptyTree =>
+            // Try to find apply method if fn is object or class instance
+            c.typecheck(q"$ft.apply _", silent = true)
+          case owervise => owervise
+        }
+        methodTree match {
+          case EmptyTree =>
+            c.error(relativePos(fnPos), s"`$fn` is not defined in the scope")
+            EmptyTree
+          case Block(_, tree) =>
+            val args = tree.collect { case Function(vparas, _) => vparas }
+            val attrs = allAttrs.collect { case l: Attribute.Literal => l}
+            val fApply = args.map { xs =>
+              xs.map { arg =>
+                val argName = arg.name.decodedName.toString
+                val argValue = if (argName == "children") {
+                  val childrenFromAttr = attrs.collectFirst {
+                    case Attribute.Literal(_, QName(_, _, Value.Literal(_, "children")), value)  => value
+                  }
+                  childrenFromAttr match {
+                    case Some(childrenValue) =>
+                      if (children.nonEmpty) {
+                        c.warning(
+                          relativePos(nodePos),
+                          "Using children from attribute. List of children nodes will be ignored"
+                        )
+                      }
+                      childrenValue match {
+                        case Value.Include(_, key) => resolveKey(key)
+                        case value => c.abort(relativePos(value.pos), "Use `${}` here")
+                      }
+                    case None => q"Seq(..${children.map(resolveXml).filter(_.nonEmpty)})"
+                  }
+                } else {
+                  val attr = attrs
+                    .collectFirst { case Attribute.Literal(_, QName(_, _, Value.Literal(_, `argName`)), value)  => value }
+                    .getOrElse { c.abort(relativePos(nodePos), s"Attribute `$argName` is not found")}
+                  attr match {
+                    case Value.Literal(_, value) => q"$value"
+                    case Value.Include(_, key) =>
+                      println(s"resolveKey(key) = ${resolveKey(key)}")
+                      resolveKey(key)
+                    case Value.Composite(pos, _) =>
+                      c.abort(relativePos(pos), "Composite values can't be applyed as function arguments")
+                  }
+                }
+                AssignOrNamedArg(Ident(arg.name), argValue)
+              }
+            }
+            fApply.foldLeft(EmptyTree) {
+              case (EmptyTree, xs) => Apply(Ident(ft), xs)
+              case (f, xs) => Apply(f, xs)
+            }
+        }
       case Xml.Node(_, QName(_, ns, name), attrs, children) =>
         val rns = resolveNs(ns)
         val n = resolveString(name)
@@ -215,11 +285,11 @@ object XmlDslMacro {
 
     val space: Parser[Unit] = P(CharIn("\t\r\n ").rep)
 
-    val `${...}`: Parser[(Position, String)] = P(Index ~ `@{` ~ (!"}" ~ AnyChar).rep(min=1).! ~ "}" ~ Index).map(pos)
+    val `@{...}`: Parser[(Position, String)] = P(Index ~ `@{` ~ (!"}" ~ AnyChar).rep(min=1).! ~ "}" ~ Index).map(pos)
 
     def value(chars: Parser[Unit]): Parser[Value] = {
       val literal = P(Index ~ (!`@{` ~ chars).rep(min = 1).! ~ Index).map(pos)
-      P(`${...}`.map(Value.Include.tupled) | literal.map(Value.Literal.tupled))
+      P(`@{...}`.map(Value.Include.tupled) | literal.map(Value.Literal.tupled))
         .rep(min = 1)
         .map(_.toList)
         .map {
@@ -230,7 +300,7 @@ object XmlDslMacro {
           case xs =>
             Value.Composite(Position(xs.head.pos.start, xs.last.pos.end), xs)
         }
-        
+
     }
 
     val identifier: P[Value] = value(CharIn('a' to 'z', 'A' to 'Z', '0' to '9', "-_"))
@@ -245,7 +315,7 @@ object XmlDslMacro {
     val attribute: Parser[Attribute] = P {
 
       val `attribute value` = P(
-        `${...}`.map(Value.Include.tupled)
+        `@{...}`.map(Value.Include.tupled)
           | (`"` ~ value(!`"` ~ AnyChar) ~ `"`)
       )
 
@@ -256,10 +326,10 @@ object XmlDslMacro {
             Attribute.Literal(p, qn, value)
         }
 
-      literal | `${...}`.map(Attribute.Include.tupled)
+      literal | `@{...}`.map(Attribute.Include.tupled)
     }
 
-    val `node include`: Parser[Xml.Include] = P(`${...}`.map(Xml.Include.tupled))
+    val `node include`: Parser[Xml.Include] = P(`@{...}`.map(Xml.Include.tupled))
 
     val text: Parser[Xml.Text] = P(Index ~ (!`<` ~ !`@{` ~/ AnyChar).rep.! ~ Index)
       .map(pos)
