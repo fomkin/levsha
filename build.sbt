@@ -8,7 +8,7 @@ val publishSettings = Seq(
   publishArtifact in Test := false,
   publishMavenStyle := true,
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  headerLicense := Some(HeaderLicense.ALv2("2017-2018", "Aleksey Fomkin")),
+  headerLicense := Some(HeaderLicense.ALv2("2017-2019", "Aleksey Fomkin")),
   excludeFilter.in(headerSources) := HiddenFileFilter || "IntStringMap.scala",
   sonatypeProjectHosting := Some(GitHubHosting("fomkin", "levsha", "Aleksey Fomkin", "aleksey.fomkin@gmail.com"))
 )
@@ -22,7 +22,7 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.11.12", "2.12.6"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
@@ -33,8 +33,8 @@ val commonSettings = Seq(
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
-    "com.lihaoyi" %% "utest" % "0.4.5" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+    "com.lihaoyi" %% "utest" % "0.6.6" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
   )
 )
 
@@ -79,7 +79,7 @@ lazy val dom = project
     normalizedName := "levsha-dom",
     //scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.3"
+      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
     )
   )
 
@@ -92,7 +92,7 @@ lazy val bench = project
   .settings(
     normalizedName := "levsha-bench",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "scalatags" % "0.6.5"
+      "com.lihaoyi" %% "scalatags" % "0.6.7"
     )
   )
 

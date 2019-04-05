@@ -55,7 +55,12 @@ trait OptimizerMacro {
         """
     // Control flow optimization
     case q"if ($cond) ${left: Tree} else ${right: Tree}" =>
-      q"if ($cond) ${optimize(left)} else ${optimize(right)}"
+      val ol = optimize(left)
+      val or = optimize(right)
+      if (ol == EmptyTree && or == EmptyTree) q"if (!$cond) $or"
+      else if (or == EmptyTree) q"if ($cond) $ol"
+      else if (ol == EmptyTree) q"if (!$cond) $or"
+      else q"if ($cond) $ol else $or"
     case q"$skip match { case ..$cases }" =>
       val optimizedCases = cases map {
         case cq"$p => ${b: Tree}" => cq"$p => ${optimize(b)}"

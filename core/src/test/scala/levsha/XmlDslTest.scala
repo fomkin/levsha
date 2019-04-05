@@ -2,13 +2,12 @@ package levsha
 
 import levsha.impl.TextPrettyPrintingConfig
 import utest._
-import utest.framework.{Test, Tree}
 
 object XmlDslTest extends TestSuite {
   import levsha.text._
   import xmlDsl._
 
-  val tests: Tree[Test] = this {
+  val tests = this {
     "simple case" - {
       val document = xml"""<a href="https://exmaple.com">Example</a>"""
       val result = renderHtml(document, TextPrettyPrintingConfig.noPrettyPrinting)
