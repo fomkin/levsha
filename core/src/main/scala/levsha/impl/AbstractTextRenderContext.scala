@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Aleksey Fomkin
+ * Copyright 2017-2019 Aleksey Fomkin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,19 +30,20 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
   private var lastOp = OpClose
   private var indentation = 0
 
-  val builder = StringBuilder.newBuilder
+  val builder: StringBuilder = StringBuilder.newBuilder
 
-  private def addIndentation() = {
-    var i = 0
-    while (i < indentation) {
-      var j = 0
-      while (j < prettyPrinting.indentationSize) {
-        builder.append(prettyPrinting.indentationChar)
-        j += 1
+  private def addIndentation(): Unit =
+    if (prettyPrinting.enableAutoIndent) {
+      var i = 0
+      while (i < indentation) {
+        var j = 0
+        while (j < prettyPrinting.indentationSize) {
+          builder.append(prettyPrinting.indentationChar)
+          j += 1
+        }
+        i += 1
       }
-      i += 1
     }
-  }
 
   def openNode(xmlns: XmlNs, name: String): Unit = {
     if (lastOp != OpClose && lastOp != OpText) {

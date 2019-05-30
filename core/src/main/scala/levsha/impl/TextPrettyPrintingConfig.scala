@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Aleksey Fomkin
+ * Copyright 2017-2019 Aleksey Fomkin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@ package levsha.impl
 case class TextPrettyPrintingConfig(
   indentationChar: Char,
   indentationSize: Int,
-  lineBreak: CharSequence
+  lineBreak: CharSequence,
+  enableAutoIndent: Boolean
 )
 
 object TextPrettyPrintingConfig {
-  val default = TextPrettyPrintingConfig(' ', 2, "\n")
-  val noPrettyPrinting = TextPrettyPrintingConfig(' ', 0, "")
+  val default = TextPrettyPrintingConfig(' ', 2, "\n", enableAutoIndent = true)
+  val noPrettyPrinting = TextPrettyPrintingConfig(' ', 0, "", enableAutoIndent = false)
 }
