@@ -22,10 +22,11 @@ package levsha.impl
 case class TextPrettyPrintingConfig(
   indentationChar: Char,
   indentationSize: Int,
-  lineBreak: CharSequence
+  lineBreak: CharSequence,
+  enableAutoIndent: Boolean
 )
 
 object TextPrettyPrintingConfig {
-  val default = TextPrettyPrintingConfig(' ', 2, "\n")
-  val noPrettyPrinting = TextPrettyPrintingConfig(' ', 0, "")
+  val default = TextPrettyPrintingConfig(' ', 2, "\n", enableAutoIndent = true)
+  val noPrettyPrinting = TextPrettyPrintingConfig(' ', 0, "", enableAutoIndent = false)
 }
