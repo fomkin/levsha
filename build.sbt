@@ -22,7 +22,7 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.12.6"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
@@ -41,6 +41,7 @@ val commonSettings = Seq(
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .enablePlugins(GitVersioning)
+  .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .settings(
@@ -60,6 +61,7 @@ lazy val coreJVM = core.jvm
 lazy val events = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .enablePlugins(GitVersioning)
+  .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .settings(normalizedName := "levsha-events")
@@ -71,6 +73,7 @@ lazy val eventsJVM = events.jvm
 lazy val dom = project
   .enablePlugins(ScalaJSPlugin)
   .enablePlugins(GitVersioning)
+  .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .dependsOn(coreJS)
