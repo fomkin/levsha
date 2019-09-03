@@ -118,8 +118,7 @@ object StaticRenderingComparision {
         )
         tags.render
       }
-    }
-    ,
+    },
 
     "twirl" -> new TemplateEngine {
       import sharedContent._

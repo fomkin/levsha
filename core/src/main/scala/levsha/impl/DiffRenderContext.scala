@@ -162,8 +162,8 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   def save(): ByteBuffer = {
     // capacity + 4 + 4 where 4 sizes of lhs and rhs
     val buff = ByteBuffer.allocate(buffer.capacity() + 16)
-    val lhsPos = lhs.position
-    val rhsPos = rhs.position
+    val lhsPos = lhs.position()
+    val rhsPos = rhs.position()
     buff.putInt(lhsPos)
     buff.putInt(lhs.limit)
     buff.putInt(rhsPos)
@@ -282,7 +282,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
   private def skipText(x: ByteBuffer): Unit = {
     val len = x.getInt()
-    x.position(x.position + len)
+    x.position(x.position() + len)
   }
 
   private def readText(x: ByteBuffer): String = {
@@ -300,7 +300,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     x.getInt() // tag name
     x.getInt() // ns
     val len = x.getInt()
-    x.position(x.position + len)
+    x.position(x.position() + len)
   }
 
   private def skipAttrText(x: ByteBuffer): Unit = {
@@ -337,7 +337,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   }
 
   private def unOp(x: ByteBuffer) = {
-    x.position(x.position - 1)
+    x.position(x.position() - 1)
   }
 
   private def skipLoop(x: ByteBuffer): Unit = {

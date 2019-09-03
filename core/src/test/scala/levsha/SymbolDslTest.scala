@@ -23,6 +23,10 @@ object SymbolDslTest extends utest.TestSuite {
         assert(result1 == """<div class="foo"></div>""")
         assert(result2 == """<div class="bar"></div>""")
       }
+      "'div('attr /= value)" - {
+        assert(renderHtml(attrOpt(Some("foo")), TextPrettyPrintingConfig.noPrettyPrinting) == """<div attr="foo"></div>""")
+        assert(renderHtml(attrOpt(None), TextPrettyPrintingConfig.noPrettyPrinting) == """<div></div>""")
+      }
     }
   }
 
@@ -34,4 +38,7 @@ object SymbolDslTest extends utest.TestSuite {
     'div(if (expr) void else 'class /= "hello")
   def ifexpr3(expr: Boolean): Node[Nothing] =
     'div(if (expr) 'class /= "foo" else 'class /= "bar")
+  def attrOpt(value: Option[String]): Node[Nothing] =
+    'div('attr /= value)
+
 }
