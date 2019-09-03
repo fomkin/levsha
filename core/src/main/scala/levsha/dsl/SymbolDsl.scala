@@ -54,6 +54,9 @@ class SymbolDsl[MiscType] extends Converters[MiscType] {
 
     def /=(value: String): Attr[MiscType] =
       macro SymbolDslMacro.attr[MiscType]
+
+    def /=(value: Option[String]): Attr[MiscType] =
+      macro SymbolDslMacro.attrOpt[MiscType]
   }
 
   implicit final class XmlNsOps(s: XmlNs) {
