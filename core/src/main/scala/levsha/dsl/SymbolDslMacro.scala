@@ -51,7 +51,7 @@ class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
           (utc, tc)
         }
         // Attributes always on top
-        .sortBy(_._2.tpe) { (x, y) =>
+        .sortBy(_._2.tpe) { (x, _) =>
           if (x =:= weakTypeOf[Document.Attr[MT]]) -1
           else 0
         }
@@ -84,8 +84,21 @@ class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
     """
   }
 
-  def xmlNsCreateQualifiedName(symbol: c.Tree): c.Tree = {
-    val q"$conv(${rawName: Tree})" = c.prefix.tree
+  def attrOpt[MT: WeakTypeTag](value: Tree): Tree = {
+    val MT = weakTypeOf[MT]
+    val (xmlNs, attr) = unfoldQualifiedName(c.prefix.tree)
+
+    q"""
+      $value.fold[levsha.Document.Attr[Nothing]](levsha.Document.Empty) { value =>
+        levsha.Document.Attr.apply[$MT] { rc =>
+          rc.setAttr($xmlNs, $attr, value)
+        }
+      }
+    """
+  }
+
+  def xmlNsCreateQualifiedName(symbol: Tree): Tree = {
+    val q"$_(${rawName: Tree})" = c.prefix.tree
     q"levsha.QualifiedName($rawName, $symbol)"
   }
 
@@ -94,7 +107,7 @@ class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
   private def unfoldQualifiedName(tree: Tree): (Tree, String) = tree match {
     case Apply(Select(_, TermName("QualifiedNameOps")), Typed(Apply(_, List(xmlNs, rawName)), _) :: Nil) =>
       (xmlNs, toKebab(rawName))
-    case expr @ q"$conv(${rawName: Tree})" =>
+    case _ @ q"$_(${rawName: Tree})" =>
       (q"levsha.XmlNs.html", toKebab(rawName))
   }
 
