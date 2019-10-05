@@ -25,7 +25,7 @@ object Change {
       buffer += Change.createText(id.toList.map(_.toInt), text)
     def create(id: Id, xmlNs: String, tag: String): Unit =
       buffer += Change.create(id.toList.map(_.toInt), tag, xmlNs)
-    def result: Seq[Change] = buffer
+    def result: Seq[Change] = buffer.toVector
   }
 
   case class removeAttr(id: List[Int], xmlNs: String, name: String) extends Change
@@ -35,9 +35,10 @@ object Change {
   case class create(id: List[Int], tag: String, xmlNs: String) extends Change
 
   implicit val ordering = new Ordering[Change] {
-    private val iterableIntOrdering = implicitly[Ordering[Iterable[Int]]]
+    import Ordering.Implicits._
+    private val underlying = implicitly[Ordering[List[Int]]]
     def compare(x: Change, y: Change): Int = {
-      iterableIntOrdering.compare(x.id, y.id)
+      underlying.compare(x.id, y.id)
     }
   }
 }

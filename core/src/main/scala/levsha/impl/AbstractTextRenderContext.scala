@@ -30,7 +30,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
   private var lastOp = OpClose
   private var indentation = 0
 
-  val builder: StringBuilder = StringBuilder.newBuilder
+  val builder: StringBuilder = new StringBuilder()
 
   private def addIndentation(): Unit =
     if (prettyPrinting.enableAutoIndent) {

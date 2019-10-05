@@ -48,7 +48,7 @@ final class IdBuilder(maxLevel: Int) {
 
   /** Resets current id and decreases level */
   def decLevel(): Unit = {
-    buffer.put(index, 0)
+    buffer.put(index, 0.toShort)
     level -= 1
     buffer.limit(level)
   }
@@ -77,7 +77,7 @@ final class IdBuilder(maxLevel: Int) {
   }
 
   def mkString(sep: Char): String = {
-    val builder = StringBuilder.newBuilder
+    val builder = new StringBuilder()
     buffer.rewind()
     while (buffer.hasRemaining) {
       builder.append(buffer.get())
