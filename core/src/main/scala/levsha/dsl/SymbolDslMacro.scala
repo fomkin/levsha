@@ -17,16 +17,15 @@
 package levsha.dsl
 
 import levsha.Document
-import macrocompat.bundle
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-@bundle class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
+class SymbolDslMacro(val c: blackbox.Context) extends OptimizerMacro {
 
   import c.universe._
 
-  def node[MT: WeakTypeTag](children: Tree*): Tree = {
+  def node[MT: c.WeakTypeTag](children: c.Tree*): c.Tree = {
 
     val ops = {
       children
@@ -74,7 +73,7 @@ import scala.reflect.macros.blackbox
     """
   }
 
-  def attr[MT: WeakTypeTag](value: Tree): Tree = {
+  def attr[MT: c.WeakTypeTag](value: c.Tree): c.Tree = {
     val MT = weakTypeOf[MT]
     val (xmlNs, attr) = unfoldQualifiedName(c.prefix.tree)
 
@@ -85,7 +84,7 @@ import scala.reflect.macros.blackbox
     """
   }
 
-  def xmlNsCreateQualifiedName(symbol: Tree): Tree = {
+  def xmlNsCreateQualifiedName(symbol: c.Tree): c.Tree = {
     val q"$conv(${rawName: Tree})" = c.prefix.tree
     q"levsha.QualifiedName($rawName, $symbol)"
   }
@@ -104,6 +103,4 @@ import scala.reflect.macros.blackbox
     case q"scala.Symbol.apply(${value: String})" => value.replaceAll("([A-Z]+)", "-$1").toLowerCase
     case _ => c.abort(tree.pos, s"Expect scala.Symbol but ${tree.tpe} given")
   }
-
-  // Misc
 }
