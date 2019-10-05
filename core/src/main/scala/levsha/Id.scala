@@ -35,7 +35,7 @@ final class Id(private val array: Array[Short]) { lhs =>
   def mkString(sep: Char): String = if (array.length == 0) {
     ""
   } else {
-    val sb = StringBuilder.newBuilder
+    val sb = new StringBuilder()
     var i = 0
     var continue = true
     while (continue) {

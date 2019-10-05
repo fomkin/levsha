@@ -75,17 +75,17 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val lhsLimit = savedBuffer.getInt
     val rhsPos = savedBuffer.getInt
     val rhsLimit = savedBuffer.getInt
-    buffer = ByteBuffer.allocateDirect(savedBuffer.capacity - 16)
+    buffer = ByteBuffer.allocateDirect(savedBuffer.capacity() - 16)
     buffer.put(savedBuffer)
     buffer.clear()
     // Restore lhs and rhs
-    buffer.limit(buffer.capacity / 2)
+    buffer.limit(buffer.capacity() / 2)
     lhs = buffer.slice()
     lhs.position(lhsPos)
     lhs.limit(lhsLimit)
     lhs.order(ByteOrder.nativeOrder())
-    buffer.position(buffer.capacity / 2)
-    buffer.limit(buffer.capacity)
+    buffer.position(buffer.capacity() / 2)
+    buffer.limit(buffer.capacity())
     rhs = buffer.slice()
     rhs.order(ByteOrder.nativeOrder())
     rhs.position(rhsPos)
@@ -154,7 +154,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   def reset(): Unit = {
     idb.reset()
     lhs.position(0)
-    while (lhs.hasRemaining)
+    while (lhs.hasRemaining())
       lhs.put(0.toByte)
     lhs.clear()
   }
@@ -165,9 +165,9 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val lhsPos = lhs.position()
     val rhsPos = rhs.position()
     buff.putInt(lhsPos)
-    buff.putInt(lhs.limit)
+    buff.putInt(lhs.limit())
     buff.putInt(rhsPos)
-    buff.putInt(rhs.limit)
+    buff.putInt(rhs.limit())
     buff.put(lhs)
     buff.put(rhs)
     buff.clear()
@@ -181,7 +181,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     lhs.flip()
     idb.reset()
 
-    while (lhs.hasRemaining) {
+    while (lhs.hasRemaining()) {
       val opA = op(lhs)
       val opB = op(rhs)
       if (opA == OpOpen && opB == OpOpen) {

@@ -22,18 +22,16 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.11.12", "2.12.9"),
+  crossScalaVersions := Seq("2.13.1", "2.12.10"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
-    "-Xfatal-warnings",
-    "-Xexperimental",
     "-unchecked"
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
-    "com.lihaoyi" %% "utest" % "0.6.6" % "test",
+    "com.lihaoyi" %% "utest" % "0.6.9" % "test",
     "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
   )
 )
@@ -46,13 +44,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(publishSettings: _*)
   .settings(
     normalizedName := "levsha-core",
-    libraryDependencies ++= Seq(
-      // Macro compat
-      "org.typelevel" %% "macro-compat" % "1.1.1" % "provided",
-      "com.lihaoyi" %%% "fastparse" % "1.0.0" % "provided",
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-      compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
-    )
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
   )
 
 lazy val coreJS = core.js
@@ -82,7 +74,7 @@ lazy val dom = project
     normalizedName := "levsha-dom",
     //scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
+      "org.scala-js" %%% "scalajs-dom" % "0.9.7"
     )
   )
 

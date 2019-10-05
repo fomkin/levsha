@@ -16,7 +16,7 @@
 
 package levsha
 
-import levsha.dsl.{SymbolDsl, XmlDsl}
+import levsha.dsl.SymbolDsl
 import levsha.impl.{TextPrettyPrintingConfig, TextRenderContext}
 
 /**
@@ -27,8 +27,6 @@ import levsha.impl.{TextPrettyPrintingConfig, TextRenderContext}
 object text {
 
   val symbolDsl = new SymbolDsl[Nothing]()
-
-  val xmlDsl = new XmlDsl[Nothing]()
 
   /**
     * Provides Text render context to make html string

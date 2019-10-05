@@ -4,6 +4,7 @@ import levsha.Change.DiffTestChangesPerformer
 import levsha.impl.DiffRenderContext
 import levsha.impl.DiffRenderContext.DummyChangesPerformer
 import org.scalacheck.{Gen, Properties, _}
+import Ordering.Implicits._
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
