@@ -1,8 +1,8 @@
 sudo: false
 language: scala
 jdk:
-  - oraclejdk8
+  - openjdk13
 scala:
-  - 2.11.12
-  - 2.12.8
+  - 2.13.1
+  - 2.12.10
 script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 -J-XX:MaxPermSize=1024M headerCheck test
