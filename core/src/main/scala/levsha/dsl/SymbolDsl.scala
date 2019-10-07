@@ -22,7 +22,9 @@ import scala.language.experimental.macros
 import scala.language.implicitConversions
 
 /**
- * Symbol based DSL allows to define documents
+ * Symbol based DSL allows to define documents.
+ * Deprecated because Scala 2.13 drops support of symbol literals.
+ *
  * {{{
  *   'body(
  *     'h1(class /= "title", "Hello World"),

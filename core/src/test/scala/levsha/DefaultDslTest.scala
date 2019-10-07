@@ -1,0 +1,78 @@
+package levsha
+
+import levsha.Document.Node
+import levsha.impl.TextPrettyPrintingConfig
+import levsha.text._
+
+object DefaultDslTest extends utest.TestSuite {
+
+  def tests = {
+    import utest._
+    this {
+      "if (expr) node else void" - {
+        val result = renderHtml(ifexpr1(true), TextPrettyPrintingConfig.noPrettyPrinting)
+        assert(result == """<div class="hello"></div>""")
+      }
+      "if (expr) void else node" - {
+        val result = renderHtml(ifexpr2(false), TextPrettyPrintingConfig.noPrettyPrinting)
+        assert(result == """<div class="hello"></div>""")
+      }
+      "if (expr) foo else bar" - {
+        val result1 = renderHtml(ifexpr3(true), TextPrettyPrintingConfig.noPrettyPrinting)
+        val result2 = renderHtml(ifexpr3(false), TextPrettyPrintingConfig.noPrettyPrinting)
+        assert(result1 == """<div class="foo"></div>""")
+        assert(result2 == """<div class="bar"></div>""")
+      }
+      "complex template 1" - {
+        val result1 = renderHtml(complexTemplate1)
+        val result2 = renderHtml(optimizedComplexTemplate1)
+        assert(result1 == result2)
+      }
+    }
+  }
+
+  import levsha.dsl.DefaultDsl.Html._
+  import levsha.dsl.DefaultDsl.optimize
+  import levsha.dsl.DefaultDsl.Converters._
+
+  def ifexpr1(expr: Boolean): Node[Nothing] =
+    optimize(div(if (expr) clazz := "hello" else void))
+  def ifexpr2(expr: Boolean): Node[Nothing] =
+    optimize(div(if (expr) void else clazz := "hello"))
+  def ifexpr3(expr: Boolean): Node[Nothing] =
+    optimize(div(if (expr) clazz := "foo" else clazz := "bar"))
+
+  val items = Seq(1, 2, 3)
+  val optValue1 = Option("hello")
+  val optValue2 = Option.empty[String]
+
+  val complexTemplate1 =
+    div(
+      h1("The Items!"),
+      optValue1.map(x => p(x)),
+      ul(
+        items map { i =>
+          li(
+            optValue2.map(x => clazz := x),
+            a(href := s"http://example.com/items/$i", s"Go $i")
+          )
+        }
+      )
+    )
+
+  def optimizedComplexTemplate1 = optimize {
+    div(
+      h1("The Items!"),
+      optValue1.map(x => p(x)),
+      ul(
+        items map { i =>
+          li(
+            optValue2.map(x => clazz := x),
+            a(href := s"http://example.com/items/$i", s"Go $i")
+          )
+        }
+      )
+    )
+  }
+
+}
