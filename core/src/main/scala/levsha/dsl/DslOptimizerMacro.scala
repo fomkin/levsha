@@ -1,8 +1,5 @@
 package levsha.dsl
 
-import levsha.dsl.DefaultDsl.{AttrDef, TagDef}
-
-import scala.reflect.api.Trees
 import scala.reflect.macros.blackbox
 
 final class DslOptimizerMacro(val c: blackbox.Context) {
@@ -28,7 +25,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
 
     def aux(tree: Tree): Tree = tree match {
       // Optimize tag open/close
-      case q"$tagDef.apply(..$children)" if tagDef.tpe <:< typeOf[TagDef] =>
+      case q"$tagDef.apply[$_](..$children)" if tagDef.tpe <:< typeOf[TagDef] =>
         val transformedChildren = children.map(aux)
         q"""
             rc.openNode($tagDef.ns, $tagDef.tagName)
@@ -36,7 +33,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
             rc.closeNode($tagDef.tagName)
           """
       // Optimize set attribute
-      case q"$attrDef.:=($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
+      case q"$attrDef.:=[$_]($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
         q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrDef.mkString($attrValue))"
       // Optimize converters
       case converter("stringToNode", value) => q"rc.addTextNode($value)"
@@ -57,7 +54,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       // scala 2.13
       case converter("seqToNode", q"${seq: Tree}.map[$_](${f: Function})") => optimizeSeq(seq, f)
       // Optimize empty nodes
-      case q"levsha.dsl.DefaultDsl.Html.void" => q"()"
+      case q"levsha.dsl.void" => q"()"
       case q"levsha.Document.Empty" => q"()"
       // Optimize control flow
       case q"if ($cond) ${lhs: Tree} else ${rhs: Tree}" =>

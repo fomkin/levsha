@@ -28,8 +28,9 @@ private[levsha] object Op {
   final val OpLastAttr = 5
   final val OpEnd = 6
 
-  final val OpSize = 1
+  // Header bytes sizes
 
+  final val OpSize = 1
   final val OpOpenSize = 9
   final val OpAttrSize = 13
   final val OpTextSize = 5

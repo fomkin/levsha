@@ -6,6 +6,10 @@ import levsha.text._
 
 object DefaultDslTest extends utest.TestSuite {
 
+  import levsha.dsl._
+  import levsha.dsl.html.tags.{div, a, h1, ul, li, p}
+  import levsha.dsl.html.attributes.{clazz, href}
+
   def tests = {
     import utest._
     this {
@@ -30,10 +34,6 @@ object DefaultDslTest extends utest.TestSuite {
       }
     }
   }
-
-  import levsha.dsl.DefaultDsl.Html._
-  import levsha.dsl.DefaultDsl.optimize
-  import levsha.dsl.DefaultDsl.Converters._
 
   def ifexpr1(expr: Boolean): Node[Nothing] =
     optimize(div(if (expr) clazz := "hello" else void))
