@@ -79,6 +79,8 @@ class SymbolDsl[MiscType] {
     def /=(value: Option[String]): Attr[MiscType] =
       macro SymbolDslMacro.attrOpt[MiscType]
 
+    def @=(value: String): Style[MiscType] =
+      Style(rc => rc.setStyle(symbol.name, value))
   }
 
   implicit final class QualifiedNameOps(s: QualifiedName) {

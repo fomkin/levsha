@@ -1572,4 +1572,372 @@ object html {
       */
     val wrap = AttrDef[String](ns, "wrap", identity)
   }
+
+  /**
+    * Common CSS Properties Reference
+    * https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Properties_Reference
+    */
+  object styles {
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background
+      */
+    val background = StyleDef[String]("background", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-attachment
+      */
+    val backgroundAttachment = StyleDef[String]("background-attachment", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-color
+      */
+    val backgroundColor = StyleDef[String]("background-color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-image
+      */
+    val backgroundImage = StyleDef[String]("background-image", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-position
+      */
+    val backgroundPosition = StyleDef[String]("background-position", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-repeat
+      */
+    val backgroundRepeat = StyleDef[String]("background-repeat", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border
+      */
+    val border = StyleDef[String]("border", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom
+      */
+    val borderBottom = StyleDef[String]("border-bottom", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-color
+      */
+    val borderBottomColor = StyleDef[String]("border-bottom-color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-style
+      */
+    val borderBottomStyle = StyleDef[String]("border-bottom-style", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-width
+      */
+    val borderBottomWidth = StyleDef[String]("border-bottom-width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-color
+      */
+    val borderColor = StyleDef[String]("border-color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left
+      */
+    val borderLeft = StyleDef[String]("border-left", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-color
+      */
+    val borderLeftColor = StyleDef[String]("border-left-color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-style
+      */
+    val borderLeftStyle = StyleDef[String]("border-left-style", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-width
+      */
+    val borderLeftWidth = StyleDef[String]("border-left-width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right
+      */
+    val borderRight = StyleDef[String]("border-right", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-color
+      */
+    val borderRightColor = StyleDef[String]("border-right-color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-style
+      */
+    val borderRightStyle = StyleDef[String]("border-right-style", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-width
+      */
+    val borderRightWidth = StyleDef[String]("border-right-width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-style
+      */
+    val borderStyle = StyleDef[String]("border-style", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top
+      */
+    val borderTop = StyleDef[String]("border-top", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-color
+      */
+    val borderTopColor = StyleDef[String]("border-top-color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-style
+      */
+    val borderTopStyle = StyleDef[String]("border-top-style", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-width
+      */
+    val borderTopWidth = StyleDef[String]("border-top-width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-width
+      */
+    val borderWidth = StyleDef[String]("border-width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/clear
+      */
+    val clear = StyleDef[String]("clear", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/clip
+      */
+    val clip = StyleDef[String]("clip", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/color
+      */
+    val color = StyleDef[String]("color", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/cursor
+      */
+    val cursor = StyleDef[String]("cursor", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/display
+      */
+    val display = StyleDef[String]("display", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/filter
+      */
+    val filter = StyleDef[String]("filter", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/float
+      */
+    val cssFloat = StyleDef[String]("float", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font
+      */
+    val font = StyleDef[String]("font", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-family
+      */
+    val fontFamily = StyleDef[String]("font-family", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-size
+      */
+    val fontSize = StyleDef[String]("font-size", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant
+      */
+    val fontVariant = StyleDef[String]("font-variant", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight
+      */
+    val fontWeight = StyleDef[String]("font-weight", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/height
+      */
+    val height = StyleDef[String]("height", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/left
+      */
+    val left = StyleDef[String]("left", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/letter-spacing
+      */
+    val letterSpacing = StyleDef[String]("letter-spacing", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/line-height
+      */
+    val lineHeight = StyleDef[String]("line-height", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style
+      */
+    val listStyle = StyleDef[String]("list-style", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-image
+      */
+    val listStyleImage = StyleDef[String]("list-style-image", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-position
+      */
+    val listStylePosition = StyleDef[String]("list-style-position", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-type
+      */
+    val listStyleType = StyleDef[String]("list-style-type", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin
+      */
+    val margin = StyleDef[String]("margin", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-bottom
+      */
+    val marginBottom = StyleDef[String]("margin-bottom", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-left
+      */
+    val marginLeft = StyleDef[String]("margin-left", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-right
+      */
+    val marginRight = StyleDef[String]("margin-right", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-top
+      */
+    val marginTop = StyleDef[String]("margin-top", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/overflow
+      */
+    val overflow = StyleDef[String]("overflow", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding
+      */
+    val padding = StyleDef[String]("padding", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-bottom
+      */
+    val paddingBottom = StyleDef[String]("padding-bottom", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-left
+      */
+    val paddingLeft = StyleDef[String]("padding-left", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-right
+      */
+    val paddingRight = StyleDef[String]("padding-right", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-top
+      */
+    val paddingTop = StyleDef[String]("padding-top", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/page-break-after
+      */
+    val pageBreakAfter = StyleDef[String]("page-break-after", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/page-break-before
+      */
+    val pageBreakBefore = StyleDef[String]("page-break-before", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/position
+      */
+    val position = StyleDef[String]("position", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-dasharray
+      */
+    val strokeDasharray = StyleDef[String]("stroke-dasharray", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-dashoffset
+      */
+    val strokeDashoffset = StyleDef[String]("stroke-dashoffset", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-width
+      */
+    val strokeWidth = StyleDef[String]("stroke-width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-align
+      */
+    val textAlign = StyleDef[String]("text-align", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration
+      */
+    val textDecoration = StyleDef[String]("text-decoration", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-indent
+      */
+    val textIndent = StyleDef[String]("text-indent", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-transform
+      */
+    val textTransform = StyleDef[String]("text-transform", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/top
+      */
+    val top = StyleDef[String]("top", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/vertical-align
+      */
+    val verticalAlign = StyleDef[String]("vertical-align", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/visibility
+      */
+    val visibility = StyleDef[String]("visibility", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/width
+      */
+    val width = StyleDef[String]("width", identity)
+
+    /**
+      * @see https://developer.mozilla.org/en-US/docs/Web/CSS/z-index
+      */
+    val zIndex = StyleDef[String]("z-index", identity)
+  }
+
 }

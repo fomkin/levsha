@@ -9,6 +9,7 @@ object DefaultDslTest extends utest.TestSuite {
   import levsha.dsl._
   import levsha.dsl.html.tags.{div, a, h1, ul, li, p}
   import levsha.dsl.html.attributes.{clazz, href}
+  import levsha.dsl.html.styles.{backgroundColor, border}
 
   def tests = {
     import utest._
@@ -48,7 +49,8 @@ object DefaultDslTest extends utest.TestSuite {
 
   val complexTemplate1 =
     div(
-      h1("The Items!"),
+      border @= "1 px solid",
+      h1(backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),
       ul(
         items map { i =>
@@ -62,7 +64,8 @@ object DefaultDslTest extends utest.TestSuite {
 
   def optimizedComplexTemplate1 = optimize {
     div(
-      h1("The Items!"),
+      border @= "1 px solid",
+      h1(backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),
       ul(
         items map { i =>

@@ -1,6 +1,6 @@
 package levsha
 
-import levsha.Document.{Attr, Empty, Node}
+import levsha.Document.{Attr, Empty, Node, Style}
 
 import scala.language.implicitConversions
 import scala.language.experimental.macros
@@ -20,6 +20,12 @@ package object dsl {
   final case class AttrDef[T](ns: XmlNs, attrName: String, mkString: T => String) {
     def :=[M](value: T): Attr[M] = Attr[M] { rc =>
       rc.setAttr(ns, attrName, mkString(value))
+    }
+  }
+
+  final case class StyleDef[T](attrName: String, mkString: T => String) {
+    def @=[M](value: T): Style[M] = Style[M] { rc =>
+      rc.setStyle(attrName, mkString(value))
     }
   }
 

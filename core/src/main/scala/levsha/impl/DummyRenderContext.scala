@@ -25,6 +25,7 @@ class DummyRenderContext[-M] extends RenderContext[M] {
   def openNode(xmlns: XmlNs, name: String): Unit = {}
   def closeNode(name: String): Unit = {}
   def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {}
+  def setStyle(name: String, value: String): Unit = {}
   def addTextNode(text: String): Unit = {}
   def addMisc(misc: M): Unit = {}
 }

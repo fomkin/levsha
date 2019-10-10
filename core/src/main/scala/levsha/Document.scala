@@ -27,6 +27,7 @@ object Document {
 
   sealed trait Node[+MiscType] extends Document[MiscType]
   sealed trait Attr[+MiscType] extends Document[MiscType]
+  sealed trait Style[+MiscType] extends Document[MiscType]
 
   object Node {
     def apply[T](f: RenderContext[T] => Unit): Node[T] = new Node[T] {
@@ -36,6 +37,12 @@ object Document {
 
   object Attr {
     def apply[T](f: RenderContext[T] => Unit): Attr[T] = new Attr[T] {
+      def apply(rc: RenderContext[T]): Unit = f(rc)
+    }
+  }
+
+  object Style {
+    def apply[T](f: RenderContext[T] => Unit): Style[T] = new Style[T] {
       def apply(rc: RenderContext[T]): Unit = f(rc)
     }
   }
