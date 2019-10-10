@@ -70,6 +70,8 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     indentation -= 1
     if (lastOp == OpAttr || lastOp == OpOpen) {
       builder.append('>')
+    } else if (lastOp == OpStyle) {
+      builder.append("\">")
     } else {
       addIndentation()
     }
@@ -83,7 +85,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
 
   def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {
     if (lastOp == OpStyle) {
-      builder.append("\" ")
+      builder.append('"')
     }
     builder.append(' ')
     builder.append(name)
@@ -96,7 +98,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
 
   def setStyle(name: String, value: String): Unit = {
     if (lastOp != OpStyle) {
-      builder.append("style=\"")
+      builder.append(" style=\"")
     }
     builder.append(name)
     builder.append(":")

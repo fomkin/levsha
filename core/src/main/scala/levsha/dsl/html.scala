@@ -861,716 +861,716 @@ object html {
       * List of types the server accepts, typically a file type.
       * Applicable to <form>, <input>
       */
-    val accept = AttrDef[String](ns, "accept", identity)
+    val accept = AttrDef(ns, "accept")
     /**
       * List of supported charsets.
       * Applicable to <form>
       */
-    val acceptCharset = AttrDef[String](ns, "accept-charset", identity)
+    val acceptCharset = AttrDef(ns, "accept-charset")
 
     /**
       * Defines a keyboard shortcut to activate or add focus to the element.
       */
-    val accesskey = AttrDef[String](ns, "accesskey", identity)
+    val accesskey = AttrDef(ns, "accesskey")
 
     /**
       * The URI of a program that processes the information submitted via the form.
       * Applicable to <form>
       */
-    val action = AttrDef[String](ns, "action", identity)
+    val action = AttrDef(ns, "action")
 
     /**
       * Specifies the horizontal alignment of the element.
       * Applicable to <applet>, <caption>, <col>, <colgroup>, <hr>, <iframe>, <img>, <table>, <tbody>, <td>, <tfoot> , <th>, <thead>, <tr>
       */
-    val align = AttrDef[String](ns, "align", identity)
+    val align = AttrDef(ns, "align")
 
     /**
       * Specifies a feature-policy for the iframe.
       * Applicable to <iframe>
       */
-    val allow = AttrDef[String](ns, "allow", identity)
+    val allow = AttrDef(ns, "allow")
 
     /**
       * Alternative text in case an image can't be displayed.
       * Applicable to <applet>, <area>, <img>, <input>
       */
-    val alt = AttrDef[String](ns, "alt", identity)
+    val alt = AttrDef(ns, "alt")
 
     /**
       * Indicates that the script should be executed asynchronously.
       * Applicable to <script>
       */
-    val async = AttrDef[String](ns, "async", identity)
+    val async = AttrDef(ns, "async")
 
     /**
       * Controls whether and how text input is automatically capitalized as it is entered/edited by the user.
       */
-    val autocapitalize = AttrDef[String](ns, "autocapitalize", identity)
+    val autocapitalize = AttrDef(ns, "autocapitalize")
 
     /**
       * Indicates whether controls in this form can by default have their values automatically completed by the browser.
       * Applicable to <form>, <input>, <select>, <textarea>
       */
-    val autocomplete = AttrDef[String](ns, "autocomplete", identity)
+    val autocomplete = AttrDef(ns, "autocomplete")
 
     /**
       * The element should be automatically focused after the page loaded.
       * Applicable to <button>, <input>, <keygen>, <select>, <textarea>
       */
-    val autofocus = AttrDef[String](ns, "autofocus", identity)
+    val autofocus = AttrDef(ns, "autofocus")
 
     /**
       * The audio or video should play as soon as possible.
       * Applicable to <audio>, <video>
       */
-    val autoplay = AttrDef[String](ns, "autoplay", identity)
+    val autoplay = AttrDef(ns, "autoplay")
 
     /**
       * Specifies the URL of an image file.
       * Note: Although browsers and email clients may still support this attribute, it is obsolete. Use CSS background-image instead.
       * Applicable to <body>, <table>, <td>, <th>
       */
-    val background = AttrDef[String](ns, "background", identity)
+    val background = AttrDef(ns, "background")
 
     /**
       * Contains the time range of already buffered media.
       * Applicable to <audio>, <video>
       */
-    val buffered = AttrDef[String](ns, "buffered", identity)
+    val buffered = AttrDef(ns, "buffered")
 
     /**
       * A challenge string that is submitted along with the public key.
       * Applicable to <keygen>
       */
-    val challenge = AttrDef[String](ns, "challenge", identity)
+    val challenge = AttrDef(ns, "challenge")
 
     /**
       * Declares the character encoding of the page or script.
       * Applicable to <meta>, <script>
       */
-    val charset = AttrDef[String](ns, "charset", identity)
+    val charset = AttrDef(ns, "charset")
 
     /**
       * Indicates whether the element should be checked on page load.
       * Applicable to <command>, <input>
       */
-    val checked = AttrDef[String](ns, "checked", identity)
+    val checked = AttrDef(ns, "checked")
 
     /**
       * Contains a URI which points to the source of the quote or change.
       * Applicable to <blockquote>, <del>, <ins>, <q>
       */
-    val cite = AttrDef[String](ns, "cite", identity)
+    val cite = AttrDef(ns, "cite")
 
     /**
       * Often used with CSS to style elements with common properties.
       */
-    val `class` = AttrDef[String](ns, "class", identity)
+    val `class` = AttrDef(ns, "class")
 
     /**
       * Often used with CSS to style elements with common properties.
       */
-    val clazz = AttrDef[String](ns, "class", identity)
+    val clazz = AttrDef(ns, "class")
 
     /**
       * This attribute gives the absolute or relative URL of the directory where applets' .class files referenced by the code attribute are stored.
       * Applicable to <applet>
       */
-    val codebase = AttrDef[String](ns, "codebase", identity)
+    val codebase = AttrDef(ns, "codebase")
 
     /**
       * Defines the number of columns in a textarea.
       * Applicable to <textarea>
       */
-    val cols = AttrDef[String](ns, "cols", identity)
+    val cols = AttrDef(ns, "cols")
 
     /**
       * The colspan attribute defines the number of columns a cell should span.
       * Applicable to <td>, <th>
       */
-    val colspan = AttrDef[String](ns, "colspan", identity)
+    val colspan = AttrDef(ns, "colspan")
 
     /**
       * A value associated with http-equiv or name depending on the context.
       * Applicable to <meta>
       */
-    val content = AttrDef[String](ns, "content", identity)
+    val content = AttrDef(ns, "content")
 
     /**
       * Indicates whether the element's content is editable.
       */
-    val contenteditable = AttrDef[String](ns, "contenteditable", identity)
+    val contenteditable = AttrDef(ns, "contenteditable")
 
     /**
       * Defines the ID of a <menu> element which will serve as the element's context menu.
       * Applicable to Global attribute
       */
-    val contextmenu = AttrDef[String](ns, "contextmenu", identity)
+    val contextmenu = AttrDef(ns, "contextmenu")
 
     /**
       * Indicates whether the browser should show playback controls to the user.
       * Applicable to <audio>, <video>
       */
-    val controls = AttrDef[String](ns, "controls", identity)
+    val controls = AttrDef(ns, "controls")
 
     /**
       * A set of values specifying the coordinates of the hot-spot region.
       * Applicable to <area>
       */
-    val coords = AttrDef[String](ns, "coords", identity)
+    val coords = AttrDef(ns, "coords")
 
     /**
       * How the element handles cross-origin requests
       * Applicable to <audio>, <img>, <link>, <script>, <video>
       */
-    val crossorigin = AttrDef[String](ns, "crossorigin", identity)
+    val crossorigin = AttrDef(ns, "crossorigin")
 
     /**
       * Specifies the Content Security Policy that an embedded document must agree to enforce upon itself.
       * Applicable to <iframe>
       */
-    val csp = AttrDef[String](ns, "csp", identity)
+    val csp = AttrDef(ns, "csp")
 
     /**
       * Indicates the date and time associated with the element.
       * Applicable to <del>, <ins>, <time>
       */
-    val datetime = AttrDef[String](ns, "datetime", identity)
+    val datetime = AttrDef(ns, "datetime")
 
     /**
       * Indicates the preferred method to decode the image.
       * Applicable to <img>
       */
-    val decoding = AttrDef[String](ns, "decoding", identity)
+    val decoding = AttrDef(ns, "decoding")
 
     /**
       * Indicates that the track should be enabled unless the user's preferences indicate something different.
       * Applicable to <track>
       */
-    val default = AttrDef[String](ns, "default", identity)
+    val default = AttrDef(ns, "default")
 
     /**
       * Indicates that the script should be executed after the page has been parsed.
       * Applicable to <script>
       */
-    val defer = AttrDef[String](ns, "defer", identity)
+    val defer = AttrDef(ns, "defer")
 
     /**
       * Defines the text direction. Allowed values are ltr (Left-To-Right) or rtl (Right-To-Left)
       * Applicable to Global attribute
       */
-    val dir = AttrDef[String](ns, "dir", identity)
+    val dir = AttrDef(ns, "dir")
 
     /**
       * Applicable to <input>, <textarea>
       */
-    val dirname = AttrDef[String](ns, "dirname", identity)
+    val dirname = AttrDef(ns, "dirname")
 
     /**
       * Indicates whether the user can interact with the element.
       * Applicable to <button>, <command>, <fieldset>, <input>, <keygen>, <optgroup>, <option>, <select>, <textarea>
       */
-    val disabled = AttrDef[String](ns, "disabled", identity)
+    val disabled = AttrDef(ns, "disabled")
 
     /**
       * Indicates that the hyperlink is to be used for downloading a resource.
       * Applicable to <a>, <area>
       */
-    val download = AttrDef[String](ns, "download", identity)
+    val download = AttrDef(ns, "download")
 
     /**
       * Defines whether the element can be dragged.
       * Applicable to Global attribute
       */
-    val draggable = AttrDef[String](ns, "draggable", identity) // TODO bool
+    val draggable = AttrDef(ns, "draggable") // TODO bool
 
     /**
       * Indicates that the element accept the dropping of content on it.
       * Applicable to Global attribute
       */
-    val dropzone = AttrDef[String](ns, "dropzone", identity)
+    val dropzone = AttrDef(ns, "dropzone")
 
     /**
       * Defines the content type of the form date when the method is POST.
       * Applicable to <form>
       */
-    val enctype = AttrDef[String](ns, "enctype", identity)
+    val enctype = AttrDef(ns, "enctype")
 
     /**
       * The enterkeyhint specifies what action label (or icon) to present for the enter key on virtual keyboards. The attribute can be used with form controls (such as the value of textarea elements), or in elements in an editing host (e.g., using contenteditable attribute).
       * Applicable to <textarea>, contenteditable
       */
-    val enterkeyhint = AttrDef[String](ns, "enterkeyhint", identity)
+    val enterkeyhint = AttrDef(ns, "enterkeyhint")
 
     /**
       * Describes elements which belongs to this one.
       * Applicable to <label>, <output>
       */
-    val `for` = AttrDef[String](ns, "for", identity)
+    val `for` = AttrDef(ns, "for")
 
     /**
       * Indicates the form that is the owner of the element.
       * Applicable to <button>, <fieldset>, <input>, <keygen>, <label>, <meter>, <object>, <output>, <progress>, <select>, <textarea>
       */
-    val form = AttrDef[String](ns, "form", identity)
+    val form = AttrDef(ns, "form")
 
     /**
       * Indicates the action of the element, overriding the action defined in the <form>.
       * Applicable to <input>, <button>
       */
-    val formaction = AttrDef[String](ns, "formaction", identity)
+    val formaction = AttrDef(ns, "formaction")
 
     /**
       * If the button/input is a submit button (type="submit"), this attribute sets the encoding type to use during form submission. If this attribute is specified, it overrides the enctype attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formenctype = AttrDef[String](ns, "formenctype", identity)
+    val formenctype = AttrDef(ns, "formenctype")
 
     /**
       * If the button/input is a submit button (type="submit"), this attribute sets the submission method to use during form submission (GET, POST, etc.). If this attribute is specified, it overrides the method attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formmethod = AttrDef[String](ns, "formmethod", identity)
+    val formmethod = AttrDef(ns, "formmethod")
 
     /**
       * If the button/input is a submit button (type="submit"), this boolean attribute specifies that the form is not to be validated when it is submitted. If this attribute is specified, it overrides the novalidate attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formnovalidate = AttrDef[String](ns, "formnovalidate", identity)
+    val formnovalidate = AttrDef(ns, "formnovalidate")
 
     /**
       * If the button/input is a submit button (type="submit"), this attribute specifies the browsing context (for example, tab, window, or inline frame) in which to display the response that is received after submitting the form. If this attribute is specified, it overrides the target attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formtarget = AttrDef[String](ns, "formtarget", identity)
+    val formtarget = AttrDef(ns, "formtarget")
 
     /**
       * IDs of the <th> elements which applies to this element.
       * Applicable to <td>, <th>
       */
-    val headers = AttrDef[String](ns, "headers", identity)
+    val headers = AttrDef(ns, "headers")
 
     /**
       * Prevents rendering of given element, while keeping child elements, e.g. script elements, active.
       */
-    val hidden = AttrDef[String](ns, "hidden", identity) // TODO boolean
+    val hidden = AttrDef(ns, "hidden") // TODO boolean
 
     /**
       * Indicates the lower bound of the upper range.
       * Applicable to <meter>
       */
-    val high = AttrDef[String](ns, "high", identity)
+    val high = AttrDef(ns, "high")
 
     /**
       * The URL of a linked resource.
       * Applicable to <a>, <area>, <base>, <link>
       */
-    val href = AttrDef[String](ns, "href", identity)
+    val href = AttrDef(ns, "href")
 
     /**
       * Specifies the language of the linked resource.
       * Applicable to <a>, <area>, <link>
       */
-    val hreflang = AttrDef[String](ns, "hreflang", identity)
+    val hreflang = AttrDef(ns, "hreflang")
 
     /**
       * Defines a pragma directive.
       * Applicable to <meta>
       */
-    val `http-equiv` = AttrDef[String](ns, "http-equiv", identity)
+    val `http-equiv` = AttrDef(ns, "http-equiv")
 
     /**
       * Specifies a picture which represents the command.
       * Applicable to <command>
       */
-    val icon = AttrDef[String](ns, "icon", identity)
+    val icon = AttrDef(ns, "icon")
 
     /**
       * Often used with CSS to style a specific element. The value of this attribute must be unique.
       * Applicable to Global attribute
       */
-    val id = AttrDef[String](ns, "id", identity)
+    val id = AttrDef(ns, "id")
 
     /**
       * Indicates the relative fetch priority for the resource.
       * Applicable to <iframe>, <img>, <link>, <script>
       */
-    val importance = AttrDef[String](ns, attrName = "importance", identity)
+    val importance = AttrDef(ns, "importance")
 
     /**
       * Specifies a Subresource Integrity value that allows browsers to verify what they fetch.
       * Applicable to <link>, <script>
       */
-    val integrity = AttrDef[String](ns, "integrity", identity)
+    val integrity = AttrDef(ns, "integrity")
 
 
     /**
       * This attribute tells the browser to ignore the actual intrinsic size of the image and pretend it’s the size specified in the attribute.
       * Applicable to <img>
       */
-    val intrinsicsize = AttrDef[String](ns, attrName = "intrinsicsize", identity)
+    val intrinsicsize = AttrDef(ns, "intrinsicsize")
 
     /**
       * Provides a hint as to the type of data that might be entered by the user while editing the element or its contents. The attribute can be used with form controls (such as the value of textarea elements), or in elements in an editing host (e.g., using contenteditable attribute).
       * Applicable to <textarea>, contenteditable
       */
-    val inputmode = AttrDef[String](ns, "inputmode", identity)
+    val inputmode = AttrDef(ns, "inputmode")
 
     /**
       * Indicates that the image is part of a server-side image map.
       * Applicable to <img>
       */
-    val ismap = AttrDef[String](ns, "ismap", identity)
+    val ismap = AttrDef(ns, "ismap")
 
     /**
       * attribute
       * Applicable to Global
       */
-    val itemprop = AttrDef[String](ns, "itemprop", identity)
+    val itemprop = AttrDef(ns, "itemprop")
 
     /**
       * Specifies the type of key generated.
       * Applicable to <keygen>
       */
-    val keytype = AttrDef[String](ns, "keytype", identity)
+    val keytype = AttrDef(ns, "keytype")
 
     /**
       * Specifies the kind of text track.
       * Applicable to <track>
       */
-    val kind = AttrDef[String](ns, "kind", identity)
+    val kind = AttrDef(ns, "kind")
 
     /**
       * Specifies a user-readable title of the element.
       * Applicable to <optgroup>, <option>, <track>
       */
-    val label = AttrDef[String](ns, "label", identity)
+    val label = AttrDef(ns, "label")
 
     /**
       * Defines the language used in the element.
       */
-    val lang = AttrDef[String](ns, "lang", identity)
+    val lang = AttrDef(ns, "lang")
 
     /**
       * Defines the script language used in the element.
       * Applicable to <script>
       */
-    val language = AttrDef[String](ns, "language", identity)
+    val language = AttrDef(ns, "language")
 
     /**
       * Identifies a list of pre-defined options to suggest to the user.
       * Applicable to <input>
       */
-    val list = AttrDef[String](ns, "list", identity)
+    val list = AttrDef(ns, "list")
 
     /**
       * Indicates whether the media should start playing from the start when it's finished.
       * Applicable to <audio>, <bgsound>, <marquee>, <video>
       */
-    val loop = AttrDef[String](ns, "loop", identity)
+    val loop = AttrDef(ns, "loop")
 
     /**
       * Indicates the upper bound of the lower range.
       * Applicable to <meter>
       */
-    val low = AttrDef[String](ns, "low", identity)
+    val low = AttrDef(ns, "low")
 
     /**
       * Indicates the maximum value allowed.
       * Applicable to <input>, <meter>, <progress>
       */
-    val max = AttrDef[String](ns, "max", identity)
+    val max = AttrDef(ns, "max")
 
     /**
       * Defines the maximum number of characters allowed in the element.
       * Applicable to <input>, <textarea>
       */
-    val maxlength = AttrDef[String](ns, "maxlength", identity)
+    val maxlength = AttrDef(ns, "maxlength")
 
     /**
       * Defines the minimum number of characters allowed in the element.
       * Applicable to <input>, <textarea>
       */
-    val minlength = AttrDef[String](ns, "minlength", identity)
+    val minlength = AttrDef(ns, "minlength")
 
     /**
       * Specifies a hint of the media for which the linked resource was designed.
       * Applicable to <a>, <area>, <link>, <source>, <style>
       */
-    val media = AttrDef[String](ns, "media", identity)
+    val media = AttrDef(ns, "media")
 
     /**
       * Defines which HTTP method to use when submitting the form. Can be GET (default) or POST.
       * Applicable to <form>
       */
-    val method = AttrDef[String](ns, "method", identity)
+    val method = AttrDef(ns, "method")
 
     /**
       * Indicates the minimum value allowed.
       * Applicable to <input>, <meter>
       */
-    val min = AttrDef[String](ns, "min", identity)
+    val min = AttrDef(ns, "min")
 
     /**
       * Indicates whether multiple values can be entered in an input of the type email or file.
       * Applicable to <input>, <select>
       */
-    val multiple = AttrDef[String](ns, "multiple", identity)
+    val multiple = AttrDef(ns, "multiple")
 
     /**
       * Indicates whether the audio will be initially silenced on page load.
       * Applicable to <audio>, <video>
       */
-    val muted = AttrDef[String](ns, "muted", identity)
+    val muted = AttrDef(ns, "muted")
 
     /**
       * Name of the element. For example used by the server to identify the fields in form submits.
       * Applicable to <button>, <form>, <fieldset>, <iframe>, <input>, <keygen>, <object>, <output>, <select>, <textarea>, <map>, <meta>, <param>
       */
-    val name = AttrDef[String](ns, "name", identity)
+    val name = AttrDef(ns, "name")
 
     /**
       * This attribute indicates that the form shouldn't be validated when submitted.
       * Applicable to <form>
       */
-    val novalidate = AttrDef[String](ns, "novalidate", identity)
+    val novalidate = AttrDef(ns, "novalidate")
 
     /**
       * Indicates whether the details will be shown on page load.
       * Applicable to <details>
       */
-    val open = AttrDef[String](ns, "open", identity)
+    val open = AttrDef(ns, "open")
 
     /**
       * Indicates the optimal numeric value.
       * Applicable to <meter>
       */
-    val optimum = AttrDef[String](ns, "optimum", identity)
+    val optimum = AttrDef(ns, "optimum")
 
     /**
       * Defines a regular expression which the element's value will be validated against.
       * Applicable to <input>
       */
-    val pattern = AttrDef[String](ns, "pattern", identity)
+    val pattern = AttrDef(ns, "pattern")
 
     /**
       * The ping attribute specifies a space-separated list of URLs to be notified if a user follows the hyperlink.
       * Applicable to <a>, <area>
       */
-    val ping = AttrDef[String](ns, "ping", identity)
+    val ping = AttrDef(ns, "ping")
 
     /**
       * Provides a hint to the user of what can be entered in the field.
       * Applicable to <input>, <textarea>
       */
-    val placeholder = AttrDef[String](ns, "placeholder", identity)
+    val placeholder = AttrDef(ns, "placeholder")
 
     /**
       * A URL indicating a poster frame to show until the user plays or seeks.
       * Applicable to <video>
       */
-    val poster = AttrDef[String](ns, "poster", identity)
+    val poster = AttrDef(ns, "poster")
 
     /**
       * Indicates whether the whole resource, parts of it or nothing should be preloaded.
       * Applicable to <audio>, <video>
       */
-    val preload = AttrDef[String](ns, "preload", identity)
+    val preload = AttrDef(ns, "preload")
 
     /**
       * Applicable to <command>
       */
-    val radiogroup = AttrDef[String](ns, "radiogroup", identity)
+    val radiogroup = AttrDef(ns, "radiogroup")
 
     /**
       * Indicates whether the element can be edited.
       * Applicable to <input>, <textarea>
       */
-    val readonly = AttrDef[String](ns, "readonly", identity)
+    val readonly = AttrDef(ns, "readonly")
 
     /**
       * Specifies which referrer is sent when fetching the resource.
       * Applicable to <a>, <area>, <iframe>, <img>, <link>, <script>
       */
-    val referrerpolicy = AttrDef[String](ns, "referrerpolicy", identity)
+    val referrerpolicy = AttrDef(ns, "referrerpolicy")
 
     /**
       * Specifies the relationship of the target object to the link object.
       * Applicable to <a>, <area>, <link>
       */
-    val rel = AttrDef[String](ns, "rel", identity)
+    val rel = AttrDef(ns, "rel")
 
     /**
       * Indicates whether this element is required to fill out or not.
       * Applicable to <input>, <select>, <textarea>
       */
-    val required = AttrDef[String](ns, "required", identity)
+    val required = AttrDef(ns, "required")
 
     /**
       * Indicates whether the list should be displayed in a descending order instead of a ascending.
       * Applicable to <ol>
       */
-    val reversed = AttrDef[String](ns, "reversed", identity)
+    val reversed = AttrDef(ns, "reversed")
 
     /**
       * Defines the number of rows in a text area.
       * Applicable to <textarea>
       */
-    val rows = AttrDef[String](ns, "rows", identity)
+    val rows = AttrDef(ns, "rows")
 
     /**
       * Defines the number of rows a table cell should span over.
       * Applicable to <td>, <th>
       */
-    val rowspan = AttrDef[String](ns, "rowspan", identity)
+    val rowspan = AttrDef(ns, "rowspan")
 
     /**
       * Stops a document loaded in an iframe from using certain features (such as submitting forms or opening new windows).
       * Applicable to <iframe>
       */
-    val sandbox = AttrDef[String](ns, "sandbox", identity)
+    val sandbox = AttrDef(ns, "sandbox")
 
     /**
       * Defines the cells that the header test (defined in the th element) relates to.
       * Applicable to <th>
       */
-    val scope = AttrDef[String](ns, "scope", identity)
+    val scope = AttrDef(ns, "scope")
 
     /**
       * Applicable to <style>
       */
-    val scoped = AttrDef[String](ns, "scoped", identity)
+    val scoped = AttrDef(ns, "scoped")
 
     /**
       * Defines a value which will be selected on page load.
       * Applicable to <option>
       */
-    val selected = AttrDef[String](ns, "selected", identity)
+    val selected = AttrDef(ns, "selected")
 
     /**
       * Applicable to <a>, <area>
       */
-    val shape = AttrDef[String](ns, "shape", identity)
+    val shape = AttrDef(ns, "shape")
 
     /**
       * Defines the width of the element (in pixels). If the element's type attribute is text or password then it's the number of characters.
       * Applicable to <input>, <select>
       */
-    val size = AttrDef[String](ns, "size", identity)
+    val size = AttrDef(ns, "size")
 
     /**
       * Applicable to <link>, <img>, <source>
       */
-    val sizes = AttrDef[String](ns, "sizes", identity)
+    val sizes = AttrDef(ns, "sizes")
 
     /**
       * Assigns a slot in a shadow DOM shadow tree to an element.
       * Applicable to Global attribute
       */
-    val slot = AttrDef[String](ns, "slot", identity)
+    val slot = AttrDef(ns, "slot")
 
     /**
       * <colgroup>
       * Applicable to <col>,
       */
-    val span = AttrDef[String](ns, "span", identity)
+    val span = AttrDef(ns, "span")
 
     /**
       * Indicates whether spell checking is allowed for the element.
       * Applicable to Global attribute
       */
-    val spellcheck = AttrDef[String](ns, "spellcheck", identity)
+    val spellcheck = AttrDef(ns, "spellcheck")
 
     /**
       * The URL of the embeddable content.
       * Applicable to <audio>, <embed>, <iframe>, <img>, <input>, <script>, <source>, <track>, <video>
       */
-    val src = AttrDef[String](ns, "src", identity)
+    val src = AttrDef(ns, "src")
 
     /**
       * Applicable to <iframe>
       */
-    val srcdoc = AttrDef[String](ns, "srcdoc", identity)
+    val srcdoc = AttrDef(ns, "srcdoc")
 
     /**
       * Applicable to <track>
       */
-    val srclang = AttrDef[String](ns, "srclang", identity)
+    val srclang = AttrDef(ns, "srclang")
 
     /**
       * One or more responsive image candidates.
       * Applicable to <img>, <source>
       */
-    val srcset = AttrDef[String](ns, "srcset", identity)
+    val srcset = AttrDef(ns, "srcset")
 
     /**
       * Defines the first number if other than 1.
       * Applicable to <ol>
       */
-    val start = AttrDef[String](ns, "start", identity)
+    val start = AttrDef(ns, "start")
 
     /**
       * Applicable to <input>
       */
-    val step = AttrDef[String](ns, "step", identity)
+    val step = AttrDef(ns, "step")
 
     /**
       * Defines CSS styles which will override styles previously set.
       */
-    val style = AttrDef[String](ns, "style", identity)
+    val style = AttrDef(ns, "style")
 
     /**
       * Applicable to	<table>
       */
-    val summary = AttrDef[String](ns, "summary", identity)
+    val summary = AttrDef(ns, "summary")
 
     /**
       * Overrides the browser's default tab order and follows the one specified instead.
       * Applicable to Global attribute
       */
-    val tabindex = AttrDef[String](ns, "tabindex", identity)
+    val tabindex = AttrDef(ns, "tabindex")
 
     /**
       * Applicable to <a>, <area>, <base>, <form>
       */
-    val target = AttrDef[String](ns, "target", identity)
+    val target = AttrDef(ns, "target")
 
     /**
       * Text to be displayed in a tooltip when hovering over the element.
       * Applicable to Global attribute
       */
-    val title = AttrDef[String](ns, "title", identity)
+    val title = AttrDef(ns, "title")
 
     /**
       * Specify whether an element ’s attribute values and the values of its Text node children are to be translated when the page is localized, or whether to leave them unchanged.
       * Applicable to Global attribute
       */
-    val translate = AttrDef[String](ns, "translate", identity)
+    val translate = AttrDef(ns, "translate")
 
     /**
       * Defines the type of the element.
       * Applicable to <button>, <input>, <command>, <embed>, <object>, <script>, <source>, <style>, <menu>
       */
-    val `type` = AttrDef[String](ns, "type", identity)
+    val `type` = AttrDef(ns, "type")
 
     /**
       * <object>
       * Applicable to <img>, <input>,
       */
-    val usemap = AttrDef[String](ns, "usemap", identity)
+    val usemap = AttrDef(ns, "usemap")
 
     /**
       * Defines a default value which will be displayed in the element on page load.
       * Applicable to <button>, <data>, <input>, <li>, <meter>, <option>, <progress>, <param>
       */
-    val value = AttrDef[String](ns, "value", identity)
+    val value = AttrDef(ns, "value")
 
     /**
       * Indicates whether the text should be wrapped.
       * Applicable to <textarea>
       */
-    val wrap = AttrDef[String](ns, "wrap", identity)
+    val wrap = AttrDef(ns, "wrap")
   }
 
   /**
@@ -1582,362 +1582,362 @@ object html {
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background
       */
-    val background = StyleDef[String]("background", identity)
+    val background = StyleDef("background")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-attachment
       */
-    val backgroundAttachment = StyleDef[String]("background-attachment", identity)
+    val backgroundAttachment = StyleDef("background-attachment")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-color
       */
-    val backgroundColor = StyleDef[String]("background-color", identity)
+    val backgroundColor = StyleDef("background-color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-image
       */
-    val backgroundImage = StyleDef[String]("background-image", identity)
+    val backgroundImage = StyleDef("background-image")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-position
       */
-    val backgroundPosition = StyleDef[String]("background-position", identity)
+    val backgroundPosition = StyleDef("background-position")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/background-repeat
       */
-    val backgroundRepeat = StyleDef[String]("background-repeat", identity)
+    val backgroundRepeat = StyleDef("background-repeat")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border
       */
-    val border = StyleDef[String]("border", identity)
+    val border = StyleDef("border")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom
       */
-    val borderBottom = StyleDef[String]("border-bottom", identity)
+    val borderBottom = StyleDef("border-bottom")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-color
       */
-    val borderBottomColor = StyleDef[String]("border-bottom-color", identity)
+    val borderBottomColor = StyleDef("border-bottom-color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-style
       */
-    val borderBottomStyle = StyleDef[String]("border-bottom-style", identity)
+    val borderBottomStyle = StyleDef("border-bottom-style")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-width
       */
-    val borderBottomWidth = StyleDef[String]("border-bottom-width", identity)
+    val borderBottomWidth = StyleDef("border-bottom-width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-color
       */
-    val borderColor = StyleDef[String]("border-color", identity)
+    val borderColor = StyleDef("border-color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left
       */
-    val borderLeft = StyleDef[String]("border-left", identity)
+    val borderLeft = StyleDef("border-left")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-color
       */
-    val borderLeftColor = StyleDef[String]("border-left-color", identity)
+    val borderLeftColor = StyleDef("border-left-color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-style
       */
-    val borderLeftStyle = StyleDef[String]("border-left-style", identity)
+    val borderLeftStyle = StyleDef("border-left-style")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-width
       */
-    val borderLeftWidth = StyleDef[String]("border-left-width", identity)
+    val borderLeftWidth = StyleDef("border-left-width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right
       */
-    val borderRight = StyleDef[String]("border-right", identity)
+    val borderRight = StyleDef("border-right")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-color
       */
-    val borderRightColor = StyleDef[String]("border-right-color", identity)
+    val borderRightColor = StyleDef("border-right-color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-style
       */
-    val borderRightStyle = StyleDef[String]("border-right-style", identity)
+    val borderRightStyle = StyleDef("border-right-style")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-width
       */
-    val borderRightWidth = StyleDef[String]("border-right-width", identity)
+    val borderRightWidth = StyleDef("border-right-width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-style
       */
-    val borderStyle = StyleDef[String]("border-style", identity)
+    val borderStyle = StyleDef("border-style")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top
       */
-    val borderTop = StyleDef[String]("border-top", identity)
+    val borderTop = StyleDef("border-top")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-color
       */
-    val borderTopColor = StyleDef[String]("border-top-color", identity)
+    val borderTopColor = StyleDef("border-top-color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-style
       */
-    val borderTopStyle = StyleDef[String]("border-top-style", identity)
+    val borderTopStyle = StyleDef("border-top-style")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-width
       */
-    val borderTopWidth = StyleDef[String]("border-top-width", identity)
+    val borderTopWidth = StyleDef("border-top-width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/border-width
       */
-    val borderWidth = StyleDef[String]("border-width", identity)
+    val borderWidth = StyleDef("border-width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/clear
       */
-    val clear = StyleDef[String]("clear", identity)
+    val clear = StyleDef("clear")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/clip
       */
-    val clip = StyleDef[String]("clip", identity)
+    val clip = StyleDef("clip")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/color
       */
-    val color = StyleDef[String]("color", identity)
+    val color = StyleDef("color")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/cursor
       */
-    val cursor = StyleDef[String]("cursor", identity)
+    val cursor = StyleDef("cursor")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/display
       */
-    val display = StyleDef[String]("display", identity)
+    val display = StyleDef("display")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/filter
       */
-    val filter = StyleDef[String]("filter", identity)
+    val filter = StyleDef("filter")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/float
       */
-    val cssFloat = StyleDef[String]("float", identity)
+    val cssFloat = StyleDef("float")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font
       */
-    val font = StyleDef[String]("font", identity)
+    val font = StyleDef("font")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-family
       */
-    val fontFamily = StyleDef[String]("font-family", identity)
+    val fontFamily = StyleDef("font-family")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-size
       */
-    val fontSize = StyleDef[String]("font-size", identity)
+    val fontSize = StyleDef("font-size")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant
       */
-    val fontVariant = StyleDef[String]("font-variant", identity)
+    val fontVariant = StyleDef("font-variant")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight
       */
-    val fontWeight = StyleDef[String]("font-weight", identity)
+    val fontWeight = StyleDef("font-weight")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/height
       */
-    val height = StyleDef[String]("height", identity)
+    val height = StyleDef("height")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/left
       */
-    val left = StyleDef[String]("left", identity)
+    val left = StyleDef("left")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/letter-spacing
       */
-    val letterSpacing = StyleDef[String]("letter-spacing", identity)
+    val letterSpacing = StyleDef("letter-spacing")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/line-height
       */
-    val lineHeight = StyleDef[String]("line-height", identity)
+    val lineHeight = StyleDef("line-height")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style
       */
-    val listStyle = StyleDef[String]("list-style", identity)
+    val listStyle = StyleDef("list-style")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-image
       */
-    val listStyleImage = StyleDef[String]("list-style-image", identity)
+    val listStyleImage = StyleDef("list-style-image")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-position
       */
-    val listStylePosition = StyleDef[String]("list-style-position", identity)
+    val listStylePosition = StyleDef("list-style-position")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-type
       */
-    val listStyleType = StyleDef[String]("list-style-type", identity)
+    val listStyleType = StyleDef("list-style-type")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin
       */
-    val margin = StyleDef[String]("margin", identity)
+    val margin = StyleDef("margin")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-bottom
       */
-    val marginBottom = StyleDef[String]("margin-bottom", identity)
+    val marginBottom = StyleDef("margin-bottom")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-left
       */
-    val marginLeft = StyleDef[String]("margin-left", identity)
+    val marginLeft = StyleDef("margin-left")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-right
       */
-    val marginRight = StyleDef[String]("margin-right", identity)
+    val marginRight = StyleDef("margin-right")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/margin-top
       */
-    val marginTop = StyleDef[String]("margin-top", identity)
+    val marginTop = StyleDef("margin-top")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/overflow
       */
-    val overflow = StyleDef[String]("overflow", identity)
+    val overflow = StyleDef("overflow")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding
       */
-    val padding = StyleDef[String]("padding", identity)
+    val padding = StyleDef("padding")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-bottom
       */
-    val paddingBottom = StyleDef[String]("padding-bottom", identity)
+    val paddingBottom = StyleDef("padding-bottom")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-left
       */
-    val paddingLeft = StyleDef[String]("padding-left", identity)
+    val paddingLeft = StyleDef("padding-left")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-right
       */
-    val paddingRight = StyleDef[String]("padding-right", identity)
+    val paddingRight = StyleDef("padding-right")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/padding-top
       */
-    val paddingTop = StyleDef[String]("padding-top", identity)
+    val paddingTop = StyleDef("padding-top")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/page-break-after
       */
-    val pageBreakAfter = StyleDef[String]("page-break-after", identity)
+    val pageBreakAfter = StyleDef("page-break-after")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/page-break-before
       */
-    val pageBreakBefore = StyleDef[String]("page-break-before", identity)
+    val pageBreakBefore = StyleDef("page-break-before")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/position
       */
-    val position = StyleDef[String]("position", identity)
+    val position = StyleDef("position")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-dasharray
       */
-    val strokeDasharray = StyleDef[String]("stroke-dasharray", identity)
+    val strokeDasharray = StyleDef("stroke-dasharray")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-dashoffset
       */
-    val strokeDashoffset = StyleDef[String]("stroke-dashoffset", identity)
+    val strokeDashoffset = StyleDef("stroke-dashoffset")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-width
       */
-    val strokeWidth = StyleDef[String]("stroke-width", identity)
+    val strokeWidth = StyleDef("stroke-width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-align
       */
-    val textAlign = StyleDef[String]("text-align", identity)
+    val textAlign = StyleDef("text-align")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration
       */
-    val textDecoration = StyleDef[String]("text-decoration", identity)
+    val textDecoration = StyleDef("text-decoration")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-indent
       */
-    val textIndent = StyleDef[String]("text-indent", identity)
+    val textIndent = StyleDef("text-indent")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/text-transform
       */
-    val textTransform = StyleDef[String]("text-transform", identity)
+    val textTransform = StyleDef("text-transform")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/top
       */
-    val top = StyleDef[String]("top", identity)
+    val top = StyleDef("top")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/vertical-align
       */
-    val verticalAlign = StyleDef[String]("vertical-align", identity)
+    val verticalAlign = StyleDef("vertical-align")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/visibility
       */
-    val visibility = StyleDef[String]("visibility", identity)
+    val visibility = StyleDef("visibility")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/width
       */
-    val width = StyleDef[String]("width", identity)
+    val width = StyleDef("width")
 
     /**
       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/z-index
       */
-    val zIndex = StyleDef[String]("z-index", identity)
+    val zIndex = StyleDef("z-index")
   }
 
 }

@@ -33,6 +33,11 @@ object DefaultDslTest extends utest.TestSuite {
         val result2 = renderHtml(optimizedComplexTemplate1)
         assert(result1 == result2)
       }
+      "sort content for unoptimized templates" - {
+        val expect = """<div style="background-color:black;" class="foo"><a></a>hello</div>"""
+        val result = renderHtml(dynTemplate, TextPrettyPrintingConfig.noPrettyPrinting)
+        assert(result == expect)
+      }
     }
   }
 
@@ -62,7 +67,17 @@ object DefaultDslTest extends utest.TestSuite {
       )
     )
 
-  def optimizedComplexTemplate1 = optimize {
+  val dynTemplate = {
+    div(
+      a(),
+      "hello",
+      void,
+      clazz := "foo",
+      backgroundColor @= "black"
+    )
+  }
+
+  val optimizedComplexTemplate1 = optimize {
     div(
       border @= "1 px solid",
       h1(backgroundColor @= "red", "The Items!"),

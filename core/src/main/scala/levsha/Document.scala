@@ -20,6 +20,7 @@ package levsha
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
 sealed trait Document[+MiscType] {
+  def kind: Document.Kind
   def apply(rc: RenderContext[MiscType]): Unit
 }
 
@@ -31,23 +32,56 @@ object Document {
 
   object Node {
     def apply[T](f: RenderContext[T] => Unit): Node[T] = new Node[T] {
+      def kind: Kind = Kind.Node
       def apply(rc: RenderContext[T]): Unit = f(rc)
     }
   }
 
   object Attr {
     def apply[T](f: RenderContext[T] => Unit): Attr[T] = new Attr[T] {
+      def kind: Kind = Kind.Attr
       def apply(rc: RenderContext[T]): Unit = f(rc)
     }
   }
 
   object Style {
     def apply[T](f: RenderContext[T] => Unit): Style[T] = new Style[T] {
+      def kind: Kind = Kind.Style
       def apply(rc: RenderContext[T]): Unit = f(rc)
     }
   }
 
   case object Empty extends Node[Nothing] with Attr[Nothing] {
+    val kind: Kind = Kind.Empty
     def apply(rc: RenderContext[Nothing]): Unit = ()
+  }
+
+  sealed trait Kind
+
+  object Kind {
+
+    case object Node extends Kind
+    case object Attr extends Kind
+    case object Style extends Kind
+    case object Empty extends Kind
+
+    implicit val ordering: Ordering[Kind] = new Ordering[Kind] {
+
+      val underlying: Ordering[Int] = implicitly[Ordering[Int]]
+
+      private def kindToInt(kind: Kind) = kind match {
+        case Style => 0
+        case Attr => 1
+        case Node => 2
+        case Empty => -1
+      }
+
+      def compare(x: Kind, y: Kind): Int = {
+        if (x == Empty || y == Empty) 0
+        else {
+          underlying.compare(kindToInt(x), kindToInt(y))
+        }
+      }
+    }
   }
 }

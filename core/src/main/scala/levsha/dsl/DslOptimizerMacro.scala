@@ -32,9 +32,13 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
             ..$transformedChildren
             rc.closeNode($tagDef.tagName)
           """
-      // Optimize set attribute
-      case q"$attrDef.:=[$_]($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
-        q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrDef.mkString($attrValue))"
+      // Optimize attributes and styles
+      case q"$styleDef.@=[$_]($styleValue)" =>
+        q"rc.setStyle($styleDef.styleName, $styleValue)"
+      case q"$attrDef.:=[$_]($attrValue)" =>
+        q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrValue)"
+//      case q"$attrDef.:=[$_]($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
+//        q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrDef.mkString($attrValue))"
       // Optimize converters
       case converter("stringToNode", value) => q"rc.addTextNode($value)"
       case converter("miscToNode", value) => q"rc.addMisc($value)"

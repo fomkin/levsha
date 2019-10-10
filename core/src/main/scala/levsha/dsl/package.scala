@@ -10,20 +10,38 @@ package object dsl {
   def optimize[T](node: Node[T]): Node[T] = macro DslOptimizerMacro.optimize[T]
 
   final case class TagDef(ns: XmlNs, tagName: String) {
-    def apply[M](children: Document[M]*): Node[M] = Node { rc =>
+    def apply[M](content: Document[M]*): Node[M] = Node { rc =>
       rc.openNode(ns, tagName)
-      children.foreach(_(rc))
+      content.filter(_ != Empty).sortBy(_.kind).foreach(_(rc))
       rc.closeNode(tagName)
     }
   }
 
-  final case class AttrDef[T](ns: XmlNs, attrName: String, mkString: T => String) {
-    def :=[M](value: T): Attr[M] = Attr[M] { rc =>
-      rc.setAttr(ns, attrName, mkString(value))
+  final case class AttrDef(ns: XmlNs, attrName: String) {
+    def :=[M](value: String): Attr[M] = Attr[M] { rc =>
+      rc.setAttr(ns, attrName, value)
     }
   }
 
-  final case class StyleDef[T](attrName: String, mkString: T => String) {
+  final case class RichAttrDef[T](ns: XmlNs, attrName: String, mkString: T => String) {
+    def :=[M](value: T): Attr[M] = Attr[M] { rc =>
+      rc.setAttr(ns, attrName, mkString(value))
+    }
+    def :=[M](value: String): Attr[M] = Attr[M] { rc =>
+      rc.setAttr(ns, attrName, value)
+    }
+  }
+
+  final case class StyleDef(styleName: String) {
+    def @=[M](value: String): Style[M] = Style[M] { rc =>
+      rc.setStyle(styleName, value)
+    }
+  }
+
+  final case class RichStyleDef[T](attrName: String, mkString: T => String) {
+    def @=[M](value: String): Style[M] = Style[M] { rc =>
+      rc.setStyle(attrName, value)
+    }
     def @=[M](value: T): Style[M] = Style[M] { rc =>
       rc.setStyle(attrName, mkString(value))
     }
