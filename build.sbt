@@ -9,7 +9,7 @@ val publishSettings = Seq(
   publishMavenStyle := true,
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2017-2019", "Aleksey Fomkin")),
-  excludeFilter.in(headerSources) := HiddenFileFilter || "IntStringMap.scala",
+  excludeFilter.in(headerSources) := HiddenFileFilter || "IntStringMap.scala" || "StringSet.scala",
   sonatypeProjectHosting := Some(GitHubHosting("fomkin", "levsha", "Aleksey Fomkin", "aleksey.fomkin@gmail.com"))
 )
 

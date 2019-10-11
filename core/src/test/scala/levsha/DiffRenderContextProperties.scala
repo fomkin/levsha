@@ -79,22 +79,22 @@ object TestDoc {
   def docToString(level: String, doc: TestDoc): String = {
     def attrsToString(attrs: Map[String, String]) =
       attrs
-        .map { case (name, value) => s"""'$name /= "$value"""" }
+        .map { case (name, value) => s"""$name := "$value"""" }
         .mkString(",")
     def stylesToString(attrs: Map[String, String]) =
       attrs
-        .map { case (name, value) => s"""'$name @= "$value"""" }
+        .map { case (name, value) => s"""$name @= "$value"""" }
         .mkString(",")
     doc match {
       case TestDoc.Text(value) => s"""$level"$value""""
       case TestDoc.Element(name, attrs, styles, Nil) =>
         val sep = if (attrs.isEmpty) "" else ","
-        s"$level'$name(${attrsToString(attrs)}$sep${stylesToString(attrs)})"
+        s"$level$name(${attrsToString(attrs)}$sep${stylesToString(styles)})"
       case TestDoc.Element(name, attrs, styles, xs) =>
         val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
         val sep = if (attrs.isEmpty) "" else ","
         val sep2 = if (styles.isEmpty) "" else ","
-        s"$level'$name(${attrsToString(attrs)}$sep${stylesToString(attrs)}$sep2\n$children\n$level)"
+        s"$level$name(${attrsToString(attrs)}$sep${stylesToString(styles)}$sep2\n$children\n$level)"
     }
   }
 

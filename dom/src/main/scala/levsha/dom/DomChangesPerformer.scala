@@ -18,6 +18,7 @@ package levsha.dom
 
 import levsha.{Id, XmlNs}
 import levsha.impl.DiffRenderContext.ChangesPerformer
+import org.scalajs.dom.raw.HTMLElement
 import org.scalajs.dom.{Element, Node}
 import org.scalajs.{dom => browserDom}
 
@@ -67,5 +68,15 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
     case node: Element if xmlNs eq XmlNs.html.uri => node.removeAttribute(name)
     case node: Element => node.removeAttributeNS(xmlNs, name)
     case node => browserDom.console.warn(s"Can't remove attribute from $node")
+  }
+
+  def setStyle(id: Id, name: String, value: String): Unit = index.get(id) foreach {
+    case node: HTMLElement => node.style.setProperty(name, value)
+    case node => browserDom.console.warn(s"Can't set style to $node")
+  }
+
+  def removeStyle(id: Id, name: String): Unit = index.get(id) foreach {
+    case node: HTMLElement => node.style.removeProperty(name)
+    case node => browserDom.console.warn(s"Can't remove style from $node")
   }
 }
