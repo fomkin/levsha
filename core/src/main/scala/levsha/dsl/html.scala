@@ -1,5 +1,6 @@
 package levsha.dsl
 
+import levsha.Document.Attr
 import levsha.XmlNs.{html => ns}
 
 /**
@@ -955,7 +956,9 @@ object html {
       * Indicates whether the element should be checked on page load.
       * Applicable to <command>, <input>
       */
-    val checked = AttrDef(ns, "checked")
+    val checked: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "checked", "")
+    }
 
     /**
       * Contains a URI which points to the source of the quote or change.
@@ -1071,7 +1074,9 @@ object html {
       * Indicates whether the user can interact with the element.
       * Applicable to <button>, <command>, <fieldset>, <input>, <keygen>, <optgroup>, <option>, <select>, <textarea>
       */
-    val disabled = AttrDef(ns, "disabled")
+    val disabled: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "disabled", "")
+    }
 
     /**
       * Indicates that the hyperlink is to be used for downloading a resource.
@@ -1081,9 +1086,10 @@ object html {
 
     /**
       * Defines whether the element can be dragged.
-      * Applicable to Global attribute
       */
-    val draggable = AttrDef(ns, "draggable") // TODO bool
+    val draggable: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "draggable", "")
+    }
 
     /**
       * Indicates that the element accept the dropping of content on it.
@@ -1119,31 +1125,33 @@ object html {
       * Indicates the action of the element, overriding the action defined in the <form>.
       * Applicable to <input>, <button>
       */
-    val formaction = AttrDef(ns, "formaction")
+    val formAction = AttrDef(ns, "formaction")
 
     /**
       * If the button/input is a submit button (type="submit"), this attribute sets the encoding type to use during form submission. If this attribute is specified, it overrides the enctype attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formenctype = AttrDef(ns, "formenctype")
+    val formEncType = AttrDef(ns, "formenctype")
 
     /**
       * If the button/input is a submit button (type="submit"), this attribute sets the submission method to use during form submission (GET, POST, etc.). If this attribute is specified, it overrides the method attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formmethod = AttrDef(ns, "formmethod")
+    val formMethod = AttrDef(ns, "formmethod")
 
     /**
       * If the button/input is a submit button (type="submit"), this boolean attribute specifies that the form is not to be validated when it is submitted. If this attribute is specified, it overrides the novalidate attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formnovalidate = AttrDef(ns, "formnovalidate")
+    val formNoValidate: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "formnovalidate", "")
+    }
 
     /**
       * If the button/input is a submit button (type="submit"), this attribute specifies the browsing context (for example, tab, window, or inline frame) in which to display the response that is received after submitting the form. If this attribute is specified, it overrides the target attribute of the button's form owner.
       * Applicable to <button>, <input>
       */
-    val formtarget = AttrDef(ns, "formtarget")
+    val formTarget = AttrDef(ns, "formtarget")
 
     /**
       * IDs of the <th> elements which applies to this element.
@@ -1154,7 +1162,9 @@ object html {
     /**
       * Prevents rendering of given element, while keeping child elements, e.g. script elements, active.
       */
-    val hidden = AttrDef(ns, "hidden") // TODO boolean
+    val hidden: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "hidden", "")
+    }
 
     /**
       * Indicates the lower bound of the upper range.
@@ -1316,7 +1326,9 @@ object html {
       * Indicates whether multiple values can be entered in an input of the type email or file.
       * Applicable to <input>, <select>
       */
-    val multiple = AttrDef(ns, "multiple")
+    val multiple: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "multiple", "")
+    }
 
     /**
       * Indicates whether the audio will be initially silenced on page load.
@@ -1387,7 +1399,9 @@ object html {
       * Indicates whether the element can be edited.
       * Applicable to <input>, <textarea>
       */
-    val readonly = AttrDef(ns, "readonly")
+    val readonly: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "readonly", "")
+    }
 
     /**
       * Specifies which referrer is sent when fetching the resource.
@@ -1446,7 +1460,9 @@ object html {
       * Defines a value which will be selected on page load.
       * Applicable to <option>
       */
-    val selected = AttrDef(ns, "selected")
+    val selected: Attr[Nothing] = Attr[Nothing] { rc =>
+      rc.setAttr(ns, "selected", "")
+    }
 
     /**
       * Applicable to <a>, <area>

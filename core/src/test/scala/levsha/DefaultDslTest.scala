@@ -7,8 +7,8 @@ import levsha.text._
 object DefaultDslTest extends utest.TestSuite {
 
   import levsha.dsl._
-  import levsha.dsl.html.tags.{div, a, h1, ul, li, p}
-  import levsha.dsl.html.attributes.{clazz, href}
+  import levsha.dsl.html.tags.{div, a, h1, ul, li, p, select, option}
+  import levsha.dsl.html.attributes.{clazz, href, selected, disabled}
   import levsha.dsl.html.styles.{backgroundColor, border}
 
   def tests = {
@@ -60,12 +60,16 @@ object DefaultDslTest extends utest.TestSuite {
   val complexTemplate1 =
     div(
       border @= "1 px solid",
-      h1(backgroundColor @= "red", "The Items!"),
+      h1(disabled, backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),
       optValue1 match {
         case Some(x) => p(x)
         case None => void
       },
+      select(
+        option("one"),
+        option(selected, "two")
+      ),
       ul(
         items map { i =>
           li(
@@ -79,12 +83,16 @@ object DefaultDslTest extends utest.TestSuite {
   val optimizedComplexTemplate1 = optimize {
     div(
       border @= "1 px solid",
-      h1(backgroundColor @= "red", "The Items!"),
+      h1(disabled, backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),
       optValue1 match {
         case Some(x) => p(x)
         case None => void
       },
+      select(
+        option("one"),
+        option(selected, "two")
+      ),
       ul(
         items map { i =>
           li(

@@ -49,6 +49,8 @@ package object dsl {
 
   val void = Empty
 
+  // Converters
+
   /** Converts String to text document node */
   implicit def stringToNode[M](value: String): Node[M] =
     Node { rc => rc.addTextNode(value) }
