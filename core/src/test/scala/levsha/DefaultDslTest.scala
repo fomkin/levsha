@@ -35,7 +35,12 @@ object DefaultDslTest extends utest.TestSuite {
       }
       "sort content for unoptimized templates" - {
         val expect = """<div style="background-color:black;" class="foo"><a></a>hello</div>"""
-        val result = renderHtml(dynTemplate, TextPrettyPrintingConfig.noPrettyPrinting)
+        val result = renderHtml(unorderedTemplate, TextPrettyPrintingConfig.noPrettyPrinting)
+        assert(result == expect)
+      }
+      "sort content for optimized templates" - {
+        val expect = """<div style="background-color:black;" class="foo"><a></a>hello</div>"""
+        val result = renderHtml(optimizedUnorderedTemplate, TextPrettyPrintingConfig.noPrettyPrinting)
         assert(result == expect)
       }
     }
@@ -57,6 +62,10 @@ object DefaultDslTest extends utest.TestSuite {
       border @= "1 px solid",
       h1(backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),
+      optValue1 match {
+        case Some(x) => p(x)
+        case None => void
+      },
       ul(
         items map { i =>
           li(
@@ -67,7 +76,27 @@ object DefaultDslTest extends utest.TestSuite {
       )
     )
 
-  val dynTemplate = {
+  val optimizedComplexTemplate1 = optimize {
+    div(
+      border @= "1 px solid",
+      h1(backgroundColor @= "red", "The Items!"),
+      optValue1.map(x => p(x)),
+      optValue1 match {
+        case Some(x) => p(x)
+        case None => void
+      },
+      ul(
+        items map { i =>
+          li(
+            optValue2.map(x => clazz := x),
+            a(href := s"http://example.com/items/$i", s"Go $i")
+          )
+        }
+      )
+    )
+  }
+
+  val unorderedTemplate = {
     div(
       a(),
       "hello",
@@ -77,20 +106,13 @@ object DefaultDslTest extends utest.TestSuite {
     )
   }
 
-  val optimizedComplexTemplate1 = optimize {
+  val optimizedUnorderedTemplate = optimize {
     div(
-      border @= "1 px solid",
-      h1(backgroundColor @= "red", "The Items!"),
-      optValue1.map(x => p(x)),
-      ul(
-        items map { i =>
-          li(
-            optValue2.map(x => clazz := x),
-            a(href := s"http://example.com/items/$i", s"Go $i")
-          )
-        }
-      )
+      a(),
+      "hello",
+      void,
+      clazz := "foo",
+      backgroundColor @= "black"
     )
   }
-
 }

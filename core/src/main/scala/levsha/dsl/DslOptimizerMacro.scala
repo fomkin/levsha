@@ -1,5 +1,7 @@
 package levsha.dsl
 
+import levsha.Document.{Attr, Style}
+
 import scala.reflect.macros.blackbox
 
 final class DslOptimizerMacro(val c: blackbox.Context) {
@@ -26,7 +28,13 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
     def aux(tree: Tree): Tree = tree match {
       // Optimize tag open/close
       case q"$tagDef.apply[$_](..$children)" if tagDef.tpe <:< typeOf[TagDef] =>
-        val transformedChildren = children.map(aux)
+        val transformedChildren = children
+          .sortBy {
+            case x if x.tpe =:= weakTypeOf[Style[T]] => -2
+            case x if x.tpe =:= weakTypeOf[Attr[T]] => -1
+            case _ => 0
+          }
+          .map(aux)
         q"""
             rc.openNode($tagDef.ns, $tagDef.tagName)
             ..$transformedChildren
@@ -37,8 +45,8 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
         q"rc.setStyle($styleDef.styleName, $styleValue)"
       case q"$attrDef.:=[$_]($attrValue)" =>
         q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrValue)"
-//      case q"$attrDef.:=[$_]($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
-//        q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrDef.mkString($attrValue))"
+//    case q"$attrDef.:=[$_]($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
+//      q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrDef.mkString($attrValue))"
       // Optimize converters
       case converter("stringToNode", value) => q"rc.addTextNode($value)"
       case converter("miscToNode", value) => q"rc.addMisc($value)"
@@ -58,12 +66,17 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       // scala 2.13
       case converter("seqToNode", q"${seq: Tree}.map[$_](${f: Function})") => optimizeSeq(seq, f)
       // Optimize empty nodes
-      case q"levsha.dsl.void" => q"()"
+      case q"levsha.dsl.`package`.void" => q"()"
       case q"levsha.Document.Empty" => q"()"
       // Optimize control flow
       case q"if ($cond) ${lhs: Tree} else ${rhs: Tree}" =>
         q"if ($cond) ${aux(lhs)} else ${aux(rhs)}"
-      // TODO match
+      case q"$expr match { case ..$cases }" =>
+        val optimizedCases = cases map {
+          case cq"$p => ${b: Tree}" => cq"$p => ${aux(b)}"
+          case cq"$p if $c => ${b: Tree}" => cq"$p if $c => ${aux(b)}"
+        }
+        q"$expr match { case ..$optimizedCases }"
       // Can't optimize
       case expr if expr.tpe <:< typeOf[levsha.Document[_]] => q"$expr.apply(rc)"
       // Skip this code
