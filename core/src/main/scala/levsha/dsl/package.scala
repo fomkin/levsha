@@ -63,7 +63,20 @@ package object dsl {
     }
   }
 
-  val void = Empty
+  def void[T]: Document.Node[T] with Document.Attr[T] = Empty
+
+  /**
+    * Add node or attribute conditionally
+    * @example
+    * {{{
+    * button(
+    *   when(inProgress)(disabled)
+    *   "Push me"
+    * )
+    * }}}
+    */
+  def when[T, D <: Document[T]](condition: Boolean)(doc: D): D =
+    if (condition) doc else Empty.asInstanceOf[D]
 
   /**
     * Use it when want overwrite default click behavior.
@@ -71,7 +84,7 @@ package object dsl {
     *   a(href := "http://example.com", preventDefaultClickBehavior)
     * }}}
     */
-  val preventDefaultClickBehavior = Attr[Nothing] { rc =>
+  val preventDefaultClickBehavior: Attr[Nothing] = Attr { rc =>
     rc.setAttr(XmlNs.html, "onclick", "return false")
   }
 

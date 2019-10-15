@@ -16,7 +16,7 @@
 
 package levsha.dsl
 
-import levsha.Document.{Attr, Style}
+import levsha.Document.{Attr, Node, Style}
 
 import scala.reflect.macros.blackbox
 
@@ -46,9 +46,14 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       case q"$tagDef.apply[$_](..$children)" if tagDef.tpe <:< weakTypeOf[TagDef] =>
         val transformedChildren = children
           .sortBy {
-            case x if x.tpe =:= weakTypeOf[Style[T]] => -2
-            case x if x.tpe =:= weakTypeOf[Attr[T]] => -1
-            case _ => 0
+            case x if x.tpe <:< weakTypeOf[Style[T]] => -2
+            case x if x.tpe <:< weakTypeOf[Attr[T]] => -1
+            case x if x.tpe <:< weakTypeOf[Node[T]] => 0
+            case x =>
+              c.warning(
+                x.pos,
+                "Unable to sort tag content in compile time. Ensure you add attributes and styles first.")
+              0
           }
           .map(aux)
         q"""

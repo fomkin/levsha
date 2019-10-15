@@ -34,7 +34,7 @@ object html {
       *
       * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
       */
-    val html = TagDef(ns, "html")
+    val Html = TagDef(ns, "html")
 
     // Document metadata
     // -----------------
@@ -315,6 +315,7 @@ object html {
       *
       * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
       */
+    @deprecated("Do not use <br> in Korolev projects. It's lead to virtual dom desynchronizing", "forever")
     val br = TagDef(ns, "br")
 
     /**
