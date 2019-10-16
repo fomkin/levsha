@@ -50,10 +50,14 @@ package object dsl {
     }
   }
 
+  def TagDef(tagName: String): TagDef = TagDef(XmlNs.html, tagName)
+
   def TagDef(namespace: XmlNs, tagName: String): TagDef = new TagDef {
     def ns: XmlNs = namespace
     def name: String = tagName
   }
+
+  def AttrDef(attrName: String): AttrDef = AttrDef(XmlNs.html, attrName)
 
   def AttrDef(namespace: XmlNs, attrName: String): AttrDef = new AttrDef {
     def ns: XmlNs = namespace
