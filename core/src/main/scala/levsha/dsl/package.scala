@@ -25,43 +25,63 @@ package object dsl {
 
   def optimize[T](node: Node[T]): Node[T] = macro DslOptimizerMacro.optimize[T]
 
-  final case class TagDef(ns: XmlNs, tagName: String) {
+  trait TagDef {
+    def ns: XmlNs
+    def name: String
     def apply[M](content: Document[M]*): Node[M] = Node { rc =>
-      rc.openNode(ns, tagName)
+      rc.openNode(ns, name)
       content.filter(_ != Empty).sortBy(_.kind).foreach(_(rc))
-      rc.closeNode(tagName)
+      rc.closeNode(name)
     }
   }
 
-  final case class AttrDef(ns: XmlNs, attrName: String) {
+  trait AttrDef {
+    def ns: XmlNs
+    def name: String
     def :=[M](value: String): Attr[M] = Attr[M] { rc =>
-      rc.setAttr(ns, attrName, value)
+      rc.setAttr(ns, name, value)
     }
   }
 
-  final case class RichAttrDef[T](ns: XmlNs, attrName: String, mkString: T => String) {
-    def :=[M](value: T): Attr[M] = Attr[M] { rc =>
-      rc.setAttr(ns, attrName, mkString(value))
-    }
-    def :=[M](value: String): Attr[M] = Attr[M] { rc =>
-      rc.setAttr(ns, attrName, value)
-    }
-  }
-
-  final case class StyleDef(styleName: String) {
+  trait StyleDef {
+    def name: String
     def @=[M](value: String): Style[M] = Style[M] { rc =>
-      rc.setStyle(styleName, value)
+      rc.setStyle(name, value)
     }
   }
 
-  final case class RichStyleDef[T](attrName: String, mkString: T => String) {
-    def @=[M](value: String): Style[M] = Style[M] { rc =>
-      rc.setStyle(attrName, value)
-    }
-    def @=[M](value: T): Style[M] = Style[M] { rc =>
-      rc.setStyle(attrName, mkString(value))
-    }
+  def TagDef(namespace: XmlNs, tagName: String): TagDef = new TagDef {
+    def ns: XmlNs = namespace
+    def name: String = tagName
   }
+
+  def AttrDef(namespace: XmlNs, attrName: String): AttrDef = new AttrDef {
+    def ns: XmlNs = namespace
+    def name: String = attrName
+  }
+
+  def StyleDef(styleName: String): StyleDef = new StyleDef {
+    def name: String = styleName
+  }
+
+//
+//  final case class RichAttrDef[T](ns: XmlNs, attrName: String, mkString: T => String) {
+//    def :=[M](value: T): Attr[M] = Attr[M] { rc =>
+//      rc.setAttr(ns, attrName, mkString(value))
+//    }
+//    def :=[M](value: String): Attr[M] = Attr[M] { rc =>
+//      rc.setAttr(ns, attrName, value)
+//    }
+//  }
+//
+//  final case class RichStyleDef[T](attrName: String, mkString: T => String) {
+//    def @=[M](value: String): Style[M] = Style[M] { rc =>
+//      rc.setStyle(attrName, value)
+//    }
+//    def @=[M](value: T): Style[M] = Style[M] { rc =>
+//      rc.setStyle(attrName, mkString(value))
+//    }
+//  }
 
   def void[T]: Document.Node[T] with Document.Attr[T] = Empty
 

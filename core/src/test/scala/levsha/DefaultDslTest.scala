@@ -7,9 +7,7 @@ import levsha.text._
 object DefaultDslTest extends utest.TestSuite {
 
   import levsha.dsl._
-  import levsha.dsl.html.tags.{div, a, h1, ul, li, p, select, option}
-  import levsha.dsl.html.attributes.{clazz, href, selected, disabled}
-  import levsha.dsl.html.styles.{backgroundColor, border}
+  import levsha.dsl.html._
 
   def tests = {
     import utest._

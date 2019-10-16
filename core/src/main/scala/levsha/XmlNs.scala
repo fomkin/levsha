@@ -16,8 +16,6 @@
 
 package levsha
 
-import scala.language.experimental.macros
-
 final case class XmlNs(shortcut: String, uri: String) {
   override val hashCode: Int = uri.hashCode
 }

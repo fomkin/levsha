@@ -57,15 +57,15 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
           }
           .map(aux)
         q"""
-            rc.openNode($tagDef.ns, $tagDef.tagName)
+            rc.openNode($tagDef.ns, $tagDef.name)
             ..$transformedChildren
-            rc.closeNode($tagDef.tagName)
+            rc.closeNode($tagDef.name)
           """
       // Optimize attributes and styles
       case q"$styleDef.@=[$_]($styleValue)" =>
-        q"rc.setStyle($styleDef.styleName, $styleValue)"
+        q"rc.setStyle($styleDef.name, $styleValue)"
       case q"$attrDef.:=[$_]($attrValue)" =>
-        q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrValue)"
+        q"rc.setAttr($attrDef.ns, $attrDef.name, $attrValue)"
 //    case q"$attrDef.:=[$_]($attrValue)" if attrDef.tpe <:< typeOf[AttrDef[_]] =>
 //      q"rc.setAttr($attrDef.ns, $attrDef.attrName, $attrDef.mkString($attrValue))"
       // Optimize converters
