@@ -82,7 +82,7 @@ Levsha's memory usage is constant.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.7.1"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.9.0"
 ```
 
 ```scala
