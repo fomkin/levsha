@@ -1,5 +1,7 @@
 package levsha.impl.internal.debox
 
+import java.util
+
 import scala.annotation.tailrec
 import scala.{specialized => sp}
 import IntStringMap.Unit2
@@ -45,7 +47,13 @@ final class IntStringMap protected[debox] (ks: Array[Int], vs: Array[String], bs
         buckets(writeTo) = 3
         len += 1
         used += 1
-        if (used > limit) grow()
+        if (used > limit) {
+          throw new Exception(
+            "Too much attributes/styles used. " +
+            "Use LEVSHA_DIFF_ATTRS_MAP environment variable " +
+            "to increase value. Default is 64"
+          )
+        }
       } else if (status == 2) {
         loop((i << 2) + i + perturbation + 1, perturbation >> 5, j)
       } else if (keys(j) == key) {
@@ -58,25 +66,15 @@ final class IntStringMap protected[debox] (ks: Array[Int], vs: Array[String], bs
     loop(i, i, -1)
   }
 
-  /**
-    * Aborb the given map's contents into this map.
-    *
-    * This method does not copy the other map's contents. Thus, this
-    * should only be used when there are no saved references to the
-    * other map. It is private, and exists primarily to simplify the
-    * implementation of certain methods.
-    *
-    * This is an O(1) operation, although it can potentially generate a
-    * lot of garbage (if the map was previously large).
-    */
-  private[this] def absorb(rhs: IntStringMap): Unit = {
-    keys = rhs.keys
-    vals = rhs.vals
-    buckets = rhs.buckets
-    len = rhs.len
-    used = rhs.used
-    mask = rhs.mask
-    limit = rhs.limit
+  def clear(): Unit = {
+    util.Arrays.fill(keys, 0)
+    util.Arrays.fill(vals.asInstanceOf[Array[AnyRef]], null)
+    util.Arrays.fill(buckets, 0.toByte)
+
+    len = n
+    used = u
+    mask = keys.length - 1
+    limit = (keys.length * 0.65).toInt
   }
 
   /**
@@ -90,41 +88,12 @@ final class IntStringMap protected[debox] (ks: Array[Int], vs: Array[String], bs
     @inline @tailrec def loop(i: Int, perturbation: Int): String = {
       val j = i & mask
       val status = buckets(j)
-      if (status == 0) throw new Exception(key.toString)//KeyNotFoundException(key.toString)
+      if (status == 0) null
       else if (status == 3 && keys(j) == key) vals(j)
       else loop((i << 2) + i + perturbation + 1, perturbation >> 5)
     }
     val i = key.## & 0x7fffffff
     loop(i, i)
-  }
-
-  /**
-    * Grow the underlying array to best accomodate the map's size.
-    *
-    * To preserve hashing access speed, the map's size should never be
-    * more than 66% of the underlying array's size. When this size is
-    * reached, the map needs to be updated (using this method) to have a
-    * larger array.
-    *
-    * The underlying array's size must always be a multiple of 2, which
-    * means this method grows the array's size by 2x (or 4x if the map
-    * is very small). This doubling helps amortize the cost of
-    * resizing, since as the map gets larger growth will happen less
-    * frequently. This method returns a null of type Unit1[A] to
-    * trigger specialization without allocating an actual instance.
-    *
-    * Growing is an O(n) operation, where n is the map's size.
-    */
-  final def grow(): Unit2[Int, String] = {
-    val next = keys.length * (if (keys.length < 10000) 4 else 2)
-    val map = IntStringMap.ofAllocatedSize(next)
-    var i = 0
-    while (i < buckets.length) {
-      if (buckets(i) == 3) map(keys(i)) = vals(i)
-      i += 1
-    }
-    absorb(map)
-    null
   }
 }
 

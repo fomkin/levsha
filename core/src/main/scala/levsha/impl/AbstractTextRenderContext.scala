@@ -25,6 +25,8 @@ import levsha.impl.internal.Op._
   */
 abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscType] {
 
+  import AbstractTextRenderContext._
+
   def prettyPrinting: TextPrettyPrintingConfig
 
   private var lastOp = OpClose
@@ -46,10 +48,7 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     }
 
   def openNode(xmlns: XmlNs, name: String): Unit = {
-    if (lastOp != OpClose && lastOp != OpText) {
-      builder.append('>')
-      builder.append(prettyPrinting.lineBreak)
-    }
+    beforeOpenNode()
     addIndentation()
     builder.append('<')
     builder.append(name)
@@ -57,10 +56,22 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     indentation += 1
   }
 
+  private def beforeOpenNode() = {
+    if (lastOp != OpClose && lastOp != OpText) {
+      if (lastOp == OpStyle) {
+        builder.append('"')
+      }
+      builder.append('>')
+      builder.append(prettyPrinting.lineBreak)
+    }
+  }
+
   def closeNode(name: String): Unit = {
     indentation -= 1
     if (lastOp == OpAttr || lastOp == OpOpen) {
       builder.append('>')
+    } else if (lastOp == OpStyle) {
+      builder.append("\">")
     } else {
       addIndentation()
     }
@@ -73,6 +84,9 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
   }
 
   def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {
+    if (lastOp == OpStyle) {
+      builder.append('"')
+    }
     builder.append(' ')
     builder.append(name)
     builder.append('=')
@@ -82,11 +96,19 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
     lastOp = OpAttr
   }
 
-  def addTextNode(text: String): Unit = {
-    if (lastOp != OpClose && lastOp != OpText) {
-      builder.append('>')
-      builder.append(prettyPrinting.lineBreak)
+  def setStyle(name: String, value: String): Unit = {
+    if (lastOp != OpStyle) {
+      builder.append(" style=\"")
     }
+    builder.append(name)
+    builder.append(":")
+    builder.append(value)
+    builder.append(";")
+    lastOp = OpStyle
+  }
+
+  def addTextNode(text: String): Unit = {
+    beforeOpenNode()
     addIndentation()
     builder.append(text)
     builder.append(prettyPrinting.lineBreak)
@@ -97,4 +119,8 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
 
   /** Creates string from buffer */
   def mkString: String = builder.mkString
+}
+
+object AbstractTextRenderContext {
+  private[levsha] val OpStyle = 100
 }

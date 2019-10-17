@@ -25,7 +25,7 @@ sealed trait Misc
 
 object Misc {
   final case class Event(
-    `type`: Symbol,
+    `type`: String,
     phase: EventPhase,
     callback: () => Any) extends Misc
 }

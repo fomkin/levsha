@@ -53,8 +53,12 @@ object DiffProperties extends Properties("Diff") {
 sealed trait TestDoc {
   def apply(rc: RenderContext[Nothing]): Unit = this match {
     case TestDoc.Text(text) => rc.addTextNode(text)
-    case TestDoc.Element(name, attrs, xs) =>
+    case TestDoc.Element(name, attrs, styles, xs) =>
       rc.openNode(XmlNs.html, name)
+      styles foreach {
+        case (style, value) =>
+          rc.setStyle(style, value)
+      }
       attrs foreach {
         case (attr, value) =>
           rc.setAttr(XmlNs.html, attr, value)
@@ -70,21 +74,27 @@ sealed trait TestDoc {
 object TestDoc {
 
   case class Text(value: String) extends TestDoc
-  case class Element(name: String, attrs: Map[String, String], xs: Seq[TestDoc]) extends TestDoc
+  case class Element(name: String, attrs: Map[String, String], styles: Map[String, String], xs: Seq[TestDoc]) extends TestDoc
 
   def docToString(level: String, doc: TestDoc): String = {
     def attrsToString(attrs: Map[String, String]) =
       attrs
-        .map { case (name, value) => s"""'$name /= "$value"""" }
+        .map { case (name, value) => s"""$name := "$value"""" }
+        .mkString(",")
+    def stylesToString(attrs: Map[String, String]) =
+      attrs
+        .map { case (name, value) => s"""$name @= "$value"""" }
         .mkString(",")
     doc match {
       case TestDoc.Text(value) => s"""$level"$value""""
-      case TestDoc.Element(name, attrs, Nil) =>
-        s"$level'$name(${attrsToString(attrs)})"
-      case TestDoc.Element(name, attrs, xs) =>
+      case TestDoc.Element(name, attrs, styles, Nil) =>
+        val sep = if (attrs.isEmpty) "" else ","
+        s"$level$name(${attrsToString(attrs)}$sep${stylesToString(styles)})"
+      case TestDoc.Element(name, attrs, styles, xs) =>
         val children = xs.map(docToString(level + "  ", _)).mkString(",\n")
         val sep = if (attrs.isEmpty) "" else ","
-        s"$level'$name(${attrsToString(attrs)}$sep\n$children\n$level)"
+        val sep2 = if (styles.isEmpty) "" else ","
+        s"$level$name(${attrsToString(attrs)}$sep${stylesToString(styles)}$sep2\n$children\n$level)"
     }
   }
 
@@ -106,9 +116,30 @@ object TestDoc {
     )
   }
 
+  val genStyle = {
+    Gen.frequency(
+      (5, "background-color" -> "red"),
+      (5, "background-color" -> "greed"),
+      (5, "background-color" -> "blue"),
+      (7, "border" -> "1 px solid"),
+      (7, "padding" -> "10px"),
+      (7, "padding" -> "5ox"),
+      (7, "padding" -> "2px"),
+      (7, "margin" -> "10px"),
+      (7, "margin" -> "5ox"),
+      (7, "margin" -> "2px")
+    )
+  }
+
   val genAttrs = {
     Gen.choose(0, 3) flatMap { s =>
       Gen.listOfN(s, genAttr).map(_.toMap)
+    }
+  }
+
+  val genStyles = {
+    Gen.choose(0, 3) flatMap { s =>
+      Gen.listOfN(s, genStyle).map(_.toMap)
     }
   }
 
@@ -133,11 +164,12 @@ object TestDoc {
     for {
       name <- genTag
       attrs <- genAttrs
+      styles <- genStyles
       len <- Gen.choose(0, size)
       gen = Gen.resize(size / (len + 1), genDocument)
       xs <- Gen.listOfN(len, gen)
     } yield {
-      Element(name, attrs, xs)
+      Element(name, attrs, styles, xs)
     }
   }
 
@@ -207,7 +239,9 @@ object ChangesTrial {
   object Intent {
 
     case class SetAttr(id: List[Int], attr: String, value: String) extends Intent
+    case class SetStyle(id: List[Int], style: String, value: String) extends Intent
     case class RemoveAttr(id: List[Int], attr: String) extends Intent
+    case class RemoveStyle(id: List[Int], style: String) extends Intent
     case class Append(id: List[Int], doc: TestDoc) extends Intent
     case class Delete(id: List[Int]) extends Intent
     case class Replace(id: List[Int], doc: TestDoc) extends Intent
@@ -215,8 +249,14 @@ object ChangesTrial {
     def genSetAttrIntent(id: List[Int]): Gen[SetAttr] = TestDoc.genAttr map {
       case (attr, value) => SetAttr(id, attr, value)
     }
+    def genSetStyleIntent(id: List[Int]): Gen[SetStyle] = TestDoc.genStyle map {
+      case (attr, value) => SetStyle(id, attr, value)
+    }
     def genRemoveAttrIntent(id: List[Int]): Gen[RemoveAttr] = TestDoc.genAttr map {
       case (attr, _) => RemoveAttr(id, attr)
+    }
+    def genRemoveStyleIntent(id: List[Int]): Gen[RemoveStyle] = TestDoc.genStyle map {
+      case (attr, _) => RemoveStyle(id, attr)
     }
     def genAppendIntent(id: List[Int]): Gen[Append] = TestDoc.genDocument map { doc =>
       Append(id, doc)
@@ -238,7 +278,9 @@ object ChangesTrial {
               case el: Element =>
                 Gen.oneOf(
                   genSetAttrIntent(id).filter(setAttr => !el.attrs.contains(setAttr.attr)),
+                  genSetStyleIntent(id).filter(setStyle => !el.styles.contains(setStyle.style)),
                   genRemoveAttrIntent(id).filter(rmAttr => el.attrs.contains(rmAttr.attr)),
+                  genRemoveStyleIntent(id).filter(removeStyle => el.styles.contains(removeStyle.style)),
                   genAppendIntent(id),
                   genDeleteIntent(id).filter(_ => id != List(1)),
                   genReplaceIntent(id).filter {
@@ -265,10 +307,14 @@ object ChangesTrial {
   val genChangesTrial = {
     def flatDocToChanges(doc: (List[Int], TestDoc)) = doc match {
       case (id, Text(value)) => List(Change.createText(id, value))
-      case (id, Element(name, attrs, _)) =>
-        Change.create(id, name, XmlNs.html.uri) :: attrs.toList.map {
+      case (id, Element(name, attrs, styles, _)) =>
+        val setAttrs = attrs.toList.map {
           case (attr, value) => Change.setAttr(id, attr, XmlNs.html.uri, value)
         }
+        val setStyles = styles.toList.map {
+          case (style, value) => Change.setStyle(id, style, value)
+        }
+        Change.create(id, name, XmlNs.html.uri) :: setStyles ::: setAttrs
     }
     for {
       originalDocument <- genDocument
@@ -300,6 +346,8 @@ object ChangesTrial {
             Seq(Change.remove(idToRemove))
           case Intent.SetAttr(id, attr, value) => Seq(Change.setAttr(id, attr, XmlNs.html.uri, value))
           case Intent.RemoveAttr(id, attr) => Seq(Change.removeAttr(id, XmlNs.html.uri, attr))
+          case Intent.SetStyle(id, style, value) => Seq(Change.setStyle(id, style, value))
+          case Intent.RemoveStyle(id, style) => Seq(Change.removeStyle(id, style))
         }
         xs.filter {
             case _: Change.remove => true
@@ -318,10 +366,10 @@ object ChangesTrial {
           acc
             .get(id)
             .fold(acc) {
-              case Element(`name`, _, _) => acc
+              case Element(`name`, _, _, _) => acc
               case _ => acc.filter(!_._1.startsWith(id))
             }
-            .updated(id, Element(name, Map.empty, Nil))
+            .updated(id, Element(name, Map.empty, Map.empty, Nil))
         case (acc, Change.createText(id, text)) =>
           acc
             .filter(!_._1.startsWith(id))
@@ -334,11 +382,25 @@ object ChangesTrial {
               val updatedEl = el.copy(attrs = el.attrs - attr)
               acc + (id -> updatedEl)
           }
+        case (acc, Change.removeStyle(id, style)) if acc.contains(id) =>
+          acc(id) match {
+            case _: Text => acc
+            case el: Element =>
+              val updatedEl = el.copy(styles = el.styles - style)
+              acc + (id -> updatedEl)
+          }
         case (acc, Change.setAttr(id, name, _, value)) if acc.contains(id) =>
           acc(id) match {
             case _: Text => acc
             case el: Element =>
               val updatedEl = el.copy(attrs = el.attrs + (name -> value))
+              acc + (id -> updatedEl)
+          }
+        case (acc, Change.setStyle(id, name, value)) if acc.contains(id) =>
+          acc(id) match {
+            case _: Text => acc
+            case el: Element =>
+              val updatedEl = el.copy(styles = el.styles + (name -> value))
               acc + (id -> updatedEl)
           }
       }

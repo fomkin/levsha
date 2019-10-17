@@ -1,6 +1,6 @@
 # Levsha
 
-Levsha is a fast HTML template engine and Scala eDSL. It works without additional memory allocation. 
+Levsha is a fast HTML template engine and Scala eDSL. Optimized templates works without additional memory allocation. 
 Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
 
 ## Static rendering
@@ -9,55 +9,43 @@ You can use Levsha as a static HTML renderer.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.7.1"
+libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.9.0"
 ```
 
 ```scala
 // In your code
-import levsha.text.symbolDsl._
 import levsha.text.renderHtml
+import levsha.dsl._
+import html._
 
 val features = Seq("Very fast", "Memory-effective")
 
 val html = renderHtml {
-  'body(
-    'div('class /= "title", "Hello, I'm Levsha!"),
-    'ul('class /= "list",
-      features map { feature =>
-        'li('class /= "item", feature)
-      }
+  optimize {
+    body(
+      div(
+        clazz := "title",
+        backgroundColor @= "red", 
+        "Hello, I'm Levsha!"
+      ),
+      ul(clazz := "list",
+        features map { feature =>
+          li(class := "item", feature)
+        }
+      )
     )
-  )
+  }
 }
 
 println(html)
 ```
 
-or 
-
-```scala
-import levsha.text.xmlDsl._
-
-val lis = features map { feature =>
-  xml"""<li class="item">$feature</>"""
-}      
-
-val html = renderHtml {
-  xml"""
-    <body>
-      <div class="title", "Hello, I'm Levsha!">
-      <ul>$lis</ul>
-    </body>      
-  """
-}
-```
-
 ```html
 <body>
-  <div class="title">Hello, I'm Levsha!</div>
+  <div style="background-color: red" class="title">Hello, I'm Levsha!</div>
   <ul class="list">
-    <li class="item">Super-fast</li>
-    <li class="item">Off-heap</li>
+    <li class="item">Very fast</li>
+    <li class="item">Memory-effective</li>
   </ul>
 </body>
 ```
@@ -100,51 +88,56 @@ libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.7.1"
 ```scala
 // In your code
 import org.scalajs.dom._
-import levsha.dom.symbolDsl._
 import levsha.dom.render
 import levsha.dom.event
+import levsha.dsl._
+import html._
 
 case class Todo(id: String, text: String, done: Boolean)
 
-def renderTodos(todos: Seq[Todo]): Unit = render(document.body) {
-  'body(
-    'div('class /= "title", "Todos"),
-    'ul('class /= "list",
-      todos map { todo =>
-        'li(
-          todo match {
-            case Todo(_, text, true) => 'strike(text)
-            case Todo(_, text, false) => 'span(text)
-          },
-          event('click) {
-            renderTodos(
-              todos.updated(
-                todos.indexOf(todo),
-                todo.copy(done = !todo.done)
-              )
-            )
-          }
-        )
-      }
-    ),
-    'input('id /= "todo-input", 'placeholder /= "New ToDo"),
-    'button("Submit",
-      event('click) {
-        val input = document
-          .getElementById("todo-input")
-          .asInstanceOf[html.Input]
-        val inputText = input.value
-        // Reset input
-        input.value = ""
-        val newTodo = Todo(
-          id = Random.alphanumeric.take(5).mkString,
-          text = inputText,
-          done = false
-        )
-        renderTodos(todos :+ newTodo)
-      }
-    )
+def onSubmitClick() = {
+  val input = document
+    .getElementById("todo-input")
+    .asInstanceOf[html.Input]
+  val inputText = input.value
+  // Reset input
+  input.value = ""
+  val newTodo = Todo(
+    id = Random.alphanumeric.take(5).mkString,
+    text = inputText,
+    done = false
   )
+  renderTodos(todos :+ newTodo)
+}
+
+def onTodoClick(todo: Todo) = {
+  renderTodos(
+    todos.updated(
+      todos.indexOf(todo),
+      todo.copy(done = !todo.done)
+    )
+  ) 
+}
+
+def renderTodos(todos: Seq[Todo]): Unit = render(document.body) {
+  optimize {
+    body(
+      div(clazz := "title", "Todos"),
+      ul(clazz := "list",
+        todos map { todo =>
+          li(
+            todo match {
+              case Todo(_, text, true) => strike(text)
+              case Todo(_, text, false) => span(text)
+            },
+            event("click")(onTodoClick(todo))
+          )
+        }
+      ),
+      input(id := "todo-input", placeholder := "New ToDo"),
+      button("Submit", event("click")(onSubmitClick()))
+    )
+  }
 }
 
 val todos = Seq(
@@ -157,18 +150,18 @@ renderTodos(todos)
 ## Memory allocation model explanation
 
 As noted below Levsha does not make _additional_
-memory allocations. It is possible because every
-template, written in Levsha DSL, in compile-time
-optimizes into calls of `RenderContext` methods
-(unlike other template engines which  
-represent their templates as AST on-heap).
+memory allocations if template optimized. It is
+possible because optimized template, in compile-time
+rewrites into calls of `RenderContext` methods
+(unlike other template engines which represent 
+their templates as AST on-heap).
 
 For example,
 
 ```scala
-'div('class /= "content", 
-  'h1("Hello world"),
-  'p("Lorem ipsum dolor")
+div(clazz := "content", 
+  h1("Hello world"),
+  p("Lorem ipsum dolor")
 )
 ```
 
@@ -196,9 +189,9 @@ When optimization can't be performed Levsha just
 applies current `RenderContext` to the unoptimized node.
 
 ```scala
-'ul(
+ul(
   Seq(1, 2, 3, 4, 5, 6, 7).collect { 
-    case x if x % 2 == 0 => 'li(x.toString)
+    case x if x % 2 == 0 => li(x.toString)
   }
 )
 
@@ -227,18 +220,18 @@ your mind this list of optimizations:
 
 1. Nodes and attrs in branches of `if` expression will be moved to current `RenderContext`
 2. Same for cases of pattern matching
-3. `xs.map(x => 'div(x))` will be rewritten into a `while` loop
-4. `maybeX.map(x => 'div(x))` will be rewritten into an `if` expression
+3. `xs.map(x => div(x))` will be rewritten into a `while` loop
+4. `maybeX.map(x => div(x))` will be rewritten into an `if` expression
 5. `void` will be removed
 
 The third item of this list shows us how to rewrite
 previous example so that optimization could be performed.
 
 ```scala
-'ul(
+ul(
   Seq(1, 2, 3, 4, 5, 6, 7)
     .filter(x => x % 2 == 0)
-    .map { x => 'li(x.toString) }
+    .map { x => li(x.toString) }
 )
 
 // ==>
@@ -257,10 +250,6 @@ Node { renderContext =>
   renderContext.closeNode("div")
 }
 ```
-
-If you are not sure about you code, run compiler 
-with `levsha.macros.notOptimizedWarnings=true`
-parameter. For example `sbt -Dlevsha.macros.notOptimizedWarnings=true`
 
 ## Worthy to note
 

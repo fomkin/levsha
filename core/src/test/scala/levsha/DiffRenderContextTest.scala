@@ -156,30 +156,30 @@ object DiffRenderContextTest extends utest.TestSuite {
       }
     }
 
-    "should consider two identical attributes with different xmlNs as different one" - {
-      val changes = runDiff(
-        original = {
-          'div(
-            'a /= "value",
-            'b /= "value"
-          )
-        },
-        updated = {
-          'div(
-            ns.mathml('a) /= "value",
-            ns.svg('b) /= "value"
-          )
-        }
-      )
-      assert {
-        changes == Seq(
-          removeAttr(List(1), XmlNs.html.uri, "b"),
-          removeAttr(List(1), XmlNs.html.uri, "a"),
-          setAttr(List(1), "b", XmlNs.svg.uri, "value"),
-          setAttr(List(1), "a", XmlNs.mathml.uri, "value")
-        )
-      }
-    }
+//    "should consider two identical attributes with different xmlNs as different one" - {
+//      val changes = runDiff(
+//        original = {
+//          'div(
+//            'a /= "value",
+//            'b /= "value"
+//          )
+//        },
+//        updated = {
+//          'div(
+//            ns.mathml('a) /= "value",
+//            ns.svg('b) /= "value"
+//          )
+//        }
+//      )
+//      assert {
+//        changes == Seq(
+//          removeAttr(List(1), XmlNs.html.uri, "b"),
+//          removeAttr(List(1), XmlNs.html.uri, "a"),
+//          setAttr(List(1), "b", XmlNs.svg.uri, "value"),
+//          setAttr(List(1), "a", XmlNs.mathml.uri, "value")
+//        )
+//      }
+//    }
   }
 
   // -----------------------
