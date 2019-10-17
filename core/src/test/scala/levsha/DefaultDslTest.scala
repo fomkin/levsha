@@ -57,6 +57,7 @@ object DefaultDslTest extends utest.TestSuite {
 
   val complexTemplate1 =
     div(
+      when(2+2==5)(checked),
       border @= "1 px solid",
       h1(disabled, backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),
@@ -80,6 +81,7 @@ object DefaultDslTest extends utest.TestSuite {
 
   val optimizedComplexTemplate1 = optimize {
     div(
+      when(2+2==5)(checked),
       border @= "1 px solid",
       h1(disabled, backgroundColor @= "red", "The Items!"),
       optValue1.map(x => p(x)),

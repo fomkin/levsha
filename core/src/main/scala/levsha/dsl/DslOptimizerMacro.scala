@@ -92,6 +92,8 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       // Optimize control flow
       case q"if ($cond) ${lhs: Tree} else ${rhs: Tree}" =>
         q"if ($cond) ${aux(lhs)} else ${aux(rhs)}"
+      case q"levsha.dsl.`package`.when[$_, $_]($cond)(${tree: Tree})" =>
+        q"if ($cond) ${aux(tree)}"
       case q"$expr match { case ..$cases }" =>
         val optimizedCases = cases map {
           case cq"$p => ${b: Tree}" => cq"$p => ${aux(b)}"
