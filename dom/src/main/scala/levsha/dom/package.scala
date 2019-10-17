@@ -56,12 +56,11 @@ package object dom {
     def saveEvents(): Unit = {
       events = miscBuffer.toMap collect {
         case (id, Misc.Event(t, p, f)) =>
-          val `type` = t.name
-          if (!registeredNativeEvents.contains(`type`)) {
-            registeredNativeEvents += `type`
-            root.addEventListener(`type`, nativeEventHandler)
+          if (!registeredNativeEvents.contains(t)) {
+            registeredNativeEvents += t
+            root.addEventListener(t, nativeEventHandler)
           }
-          EventId(id, `type` , p) -> f
+          EventId(id, t , p) -> f
       }
       
       // Reset the buffer
@@ -81,7 +80,7 @@ package object dom {
     root.renderContext.swap()
   }
 
-  def event(`type`: Symbol, phase: EventPhase = EventPhase.Bubbling)
+  def event(`type`: String, phase: EventPhase = EventPhase.Bubbling)
            (callback: => Any): Misc.Event = {
     Misc.Event(`type`, phase, () => callback)
   }
