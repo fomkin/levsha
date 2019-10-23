@@ -247,6 +247,11 @@ object html {
     * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
     */
   val h1: TagDef = TagDef(ns, "h1")
+  val h2: TagDef = TagDef(ns, "h2")
+  val h3: TagDef = TagDef(ns, "h3")
+  val h4: TagDef = TagDef(ns, "h4")
+  val h5: TagDef = TagDef(ns, "h5")
+  val h6: TagDef = TagDef(ns, "h6")
 
   /**
     * The HTML <hgroup> element represents a multi-level heading for a section of a document. It groups a set of <h1>–<h6> elements.
@@ -1824,6 +1829,11 @@ object html {
   val left: StyleDef = StyleDef("left")
 
   /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/right
+    */
+  val right: StyleDef = StyleDef("right")
+
+  /**
     * @see https://developer.mozilla.org/en-US/docs/Web/CSS/letter-spacing
     */
   val letterSpacing: StyleDef = StyleDef("letter-spacing")
@@ -1982,4 +1992,92 @@ object html {
     * @see https://developer.mozilla.org/en-US/docs/Web/CSS/z-index
     */
   val zIndex: StyleDef = StyleDef("z-index")
+
+  // Flexbox
+  // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex
+    */
+  val flex: StyleDef = StyleDef("flex")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex-basis
+    */
+  val flexBasis: StyleDef = StyleDef("flex-basis")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction
+    */
+  val flexDirection: StyleDef = StyleDef("flex-direction")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex-flow
+    */
+  val flexFlow: StyleDef = StyleDef("flex-flow")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex-grow
+    */
+  val flexGrow: StyleDef = StyleDef("flex-grow")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink
+    */
+  val flexShrink: StyleDef = StyleDef("flex-shrink")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
+    */
+  val flexWrap: StyleDef = StyleDef("flex-wrap")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/order
+    */
+  val order: StyleDef = StyleDef("order")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content
+    */
+  val justifyContent: StyleDef = StyleDef("justify-content")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
+    */
+  val alignContent: StyleDef = StyleDef("align-content")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
+    */
+  val alignItems: StyleDef = StyleDef("align-items")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/align-self
+    */
+  val alignSelf: StyleDef = StyleDef("align-self")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/place-content
+    */
+  val placeContent: StyleDef = StyleDef("place-content")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/place-items
+    */
+  val placeItems: StyleDef = StyleDef("place-items")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/row-gap
+    */
+  val rowGap: StyleDef = StyleDef("row-gap")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/column-gap
+    */
+  val columnGap: StyleDef = StyleDef("column-gap")
+
+  /**
+    * @see https://developer.mozilla.org/en-US/docs/Web/CSS/gap
+    */
+  val gap: StyleDef = StyleDef("gap")
 }
