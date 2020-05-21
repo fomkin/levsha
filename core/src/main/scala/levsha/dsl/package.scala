@@ -24,9 +24,9 @@ import scala.language.experimental.macros
 package object dsl {
 
   /**
-    * Optimize template to monolith (if possible) Document.Node in compile time.
+    * Optimize template to monolith (if possible) [[levsha.Document.Node]] in compile time.
     * Note this method touched by non-idempotent typechecking bug of Scala compiler.
-    * It means, sometimes yor code could me broken. Try not to insert non-DSL code
+    * It means, sometimes your code could be broken. Try not to insert non-DSL code
     * into `optimize {}` call.
     *
     * @see https://github.com/scala/bug/issues/5464
