@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
-package levsha.impl
+package levsha.impl.internal
 
 /**
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
+  * Op codes
   */
-final class TextRenderContext(val prettyPrinting: TextPrettyPrintingConfig = TextPrettyPrintingConfig.default)
-    extends AbstractTextRenderContext[Nothing]
+private[impl] object Op {
+  final val OpOpen = 1
+  final val OpClose = 2
+  final val OpAttr = 3
+  final val OpText = 4
+  final val OpLastAttr = 5
+  final val OpEnd = 6
+  final val OpStyle = 100
+
+  // Header bytes sizes
+
+  final val OpSize = 1
+  final val OpOpenSize = 9
+  final val OpAttrSize = 14
+  final val OpTextSize = 5
+}

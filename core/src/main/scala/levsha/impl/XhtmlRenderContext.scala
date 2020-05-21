@@ -17,22 +17,21 @@
 package levsha.impl
 
 import levsha.{RenderContext, XmlNs}
-import Op._
+import levsha.impl.internal.Op._
 
 /**
-  * Generates HTML
+  * Generates XHTML output.
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscType] {
-
-  def prettyPrinting: TextPrettyPrintingConfig
-
-  protected var lastOp: Int = OpClose
-  protected var indentation: Int = 0
+class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
+  extends RenderContext[MiscType] {
 
   val builder: StringBuilder = new StringBuilder()
 
-  protected def addIndentation(): Unit =
+  private[impl] var lastOp: Int = OpClose
+  private[impl] var indentation: Int = 0
+
+  private[impl] def addIndentation(): Unit =
     if (prettyPrinting.enableAutoIndent) {
       var i = 0
       while (i < indentation) {

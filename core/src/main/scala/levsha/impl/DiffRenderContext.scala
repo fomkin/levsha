@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets
 
 import levsha._
 import levsha.impl.DiffRenderContext._
-import Op._
+import levsha.impl.internal.Op._
 
 import scala.annotation.switch
 import internal.debox.{IntStringMap, StringSet}
