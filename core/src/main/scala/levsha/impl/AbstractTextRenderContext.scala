@@ -17,7 +17,7 @@
 package levsha.impl
 
 import levsha.{RenderContext, XmlNs}
-import levsha.impl.internal.Op._
+import Op._
 
 /**
   * Generates HTML
@@ -25,16 +25,14 @@ import levsha.impl.internal.Op._
   */
 abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscType] {
 
-  import AbstractTextRenderContext._
-
   def prettyPrinting: TextPrettyPrintingConfig
 
-  private var lastOp = OpClose
-  private var indentation = 0
+  protected var lastOp: Int = OpClose
+  protected var indentation: Int = 0
 
   val builder: StringBuilder = new StringBuilder()
 
-  private def addIndentation(): Unit =
+  protected def addIndentation(): Unit =
     if (prettyPrinting.enableAutoIndent) {
       var i = 0
       while (i < indentation) {
@@ -119,8 +117,4 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
 
   /** Creates string from buffer */
   def mkString: String = builder.mkString
-}
-
-object AbstractTextRenderContext {
-  private[levsha] val OpStyle = 100
 }
