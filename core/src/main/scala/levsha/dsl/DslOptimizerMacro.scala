@@ -50,9 +50,11 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
             case x if x.tpe <:< weakTypeOf[Attr[T]] => -1
             case x if x.tpe <:< weakTypeOf[Node[T]] => 0
             case x =>
-              c.warning(
-                x.pos,
-                "Unable to sort tag content in compile time. Ensure you add attributes and styles first.")
+              if(unableToSortTagWarningsEnabled) {
+                c.warning(
+                  x.pos,
+                  "Unable to sort tag content in compile time. Ensure you add attributes and styles first.")
+              }
               0
           }
           .map(aux)
@@ -136,5 +138,12 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       case Apply(TypeApply(Select(_, TermName(fun)), _), value :: Nil) => Some((fun, value))
       case _ => None
     }
+  }
+
+  private val unableToSortTagWarningsEnabled = {
+    val propName = "levsha.macros.unableToSortTagWarnings"
+    sys.props.get(propName)
+      .orElse(sys.env.get(propName))
+      .fold(false)(x => if (x == "true") true else false)
   }
 }
