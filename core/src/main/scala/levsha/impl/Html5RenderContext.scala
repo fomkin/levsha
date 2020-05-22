@@ -4,7 +4,7 @@ import levsha.impl.internal.Op._
 
 /**
   * Generates HTML5 output.
-  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
+  * @author Alexander Semenov
   */
 class Html5RenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
   extends XhtmlRenderContext[MiscType](prettyPrinting) {
