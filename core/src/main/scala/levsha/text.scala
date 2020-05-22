@@ -17,7 +17,7 @@
 package levsha
 
 import levsha.dsl.SymbolDsl
-import levsha.impl.{TextPrettyPrintingConfig, TextRenderContext}
+import levsha.impl.{TextPrettyPrintingConfig, XhtmlRenderContext}
 
 /**
   * Default template context and dsl
@@ -39,7 +39,7 @@ object text {
     */
   def renderHtml(f: Document.Node[Nothing],
                  prettyPrinting: TextPrettyPrintingConfig = TextPrettyPrintingConfig.default): String = {
-    val renderContext = new TextRenderContext(prettyPrinting)
+    val renderContext = new XhtmlRenderContext(prettyPrinting)
     f(renderContext)
     renderContext.mkString
   }

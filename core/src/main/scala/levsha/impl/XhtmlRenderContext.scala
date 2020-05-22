@@ -20,21 +20,18 @@ import levsha.{RenderContext, XmlNs}
 import levsha.impl.internal.Op._
 
 /**
-  * Generates HTML
+  * Generates XHTML output.
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscType] {
-
-  import AbstractTextRenderContext._
-
-  def prettyPrinting: TextPrettyPrintingConfig
-
-  private var lastOp = OpClose
-  private var indentation = 0
+class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
+  extends RenderContext[MiscType] {
 
   val builder: StringBuilder = new StringBuilder()
 
-  private def addIndentation(): Unit =
+  private[impl] var lastOp: Int = OpClose
+  private[impl] var indentation: Int = 0
+
+  private[impl] def addIndentation(): Unit =
     if (prettyPrinting.enableAutoIndent) {
       var i = 0
       while (i < indentation) {
@@ -119,8 +116,4 @@ abstract class AbstractTextRenderContext[MiscType] extends RenderContext[MiscTyp
 
   /** Creates string from buffer */
   def mkString: String = builder.mkString
-}
-
-object AbstractTextRenderContext {
-  private[levsha] val OpStyle = 100
 }
