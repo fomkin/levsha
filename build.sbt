@@ -8,7 +8,7 @@ val publishSettings = Seq(
   publishArtifact in Test := false,
   publishMavenStyle := true,
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  headerLicense := Some(HeaderLicense.ALv2("2017-2019", "Aleksey Fomkin")),
+  headerLicense := Some(HeaderLicense.ALv2("2017-2020", "Aleksey Fomkin")),
   excludeFilter.in(headerSources) := HiddenFileFilter || "IntStringMap.scala" || "StringSet.scala",
   sonatypeProjectHosting := Some(GitHubHosting("fomkin", "levsha", "Aleksey Fomkin", "aleksey.fomkin@gmail.com"))
 )
@@ -22,7 +22,7 @@ val dontPublishSettings = Seq(
 
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.13.2", "2.12.10"),
+  crossScalaVersions := Seq("2.13.2", "2.12.11"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
