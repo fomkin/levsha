@@ -3,6 +3,7 @@ package levsha
 import levsha.Document.Node
 import levsha.impl.TextPrettyPrintingConfig
 import levsha.text._
+import levsha.dsl.SymbolDsl
 
 object SymbolDslTest extends utest.TestSuite {
 
@@ -30,6 +31,7 @@ object SymbolDslTest extends utest.TestSuite {
     }
   }
 
+  val symbolDsl = new SymbolDsl[Nothing]()
   import symbolDsl._
 
   def ifexpr1(expr: Boolean): Node[Nothing] =

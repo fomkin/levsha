@@ -3,6 +3,8 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val unusedRepo = Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
+scalaVersion := "3.0.0"
+
 val publishSettings = Seq(
   publishTo := sonatypePublishTo.value,
   publishArtifact in Test := false,
@@ -20,9 +22,28 @@ val dontPublishSettings = Seq(
   headerLicense := None
 )
 
+def additionalUnmanagedSources(cfg: Configuration) = Def.setting {
+  val isCrossProject = baseDirectory.value.getName match {
+    case ".js" => true
+    case ".jvm" => true
+    case ".native" => true
+    case _ => false
+  }
+  val origSourceDir = (cfg / sourceDirectory).value
+  val sourceDir =
+    if (isCrossProject) file((cfg / baseDirectory).value.getParent) / "src" / origSourceDir.getName
+    else origSourceDir
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((3, _))  => Seq(sourceDir / "scala-3")
+    case Some((2, _))  => Seq(sourceDir / "scala-2")
+    case _             => Seq()
+  }
+}
+
 val commonSettings = Seq(
   organization := "com.github.fomkin",
-  crossScalaVersions := Seq("2.13.2", "2.12.11"),
+  scalaVersion := "3.0.0",
+  crossScalaVersions := Seq("2.13.6", "2.12.11", "3.0.0"),
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
@@ -31,10 +52,14 @@ val commonSettings = Seq(
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
-    "com.lihaoyi" %% "utest" % "0.6.9" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
-  )
+    "com.lihaoyi" %% "utest" % "0.7.10" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
+  ),
+  // Add some more source directories
+  managedSourceDirectories in Compile ++= additionalUnmanagedSources(Compile).value,
+  managedSourceDirectories in Test ++= additionalUnmanagedSources(Test).value
 )
+
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
@@ -44,7 +69,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(publishSettings: _*)
   .settings(
     normalizedName := "levsha-core",
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
+    libraryDependencies ++= (
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, _)) =>
+          List("org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided")
+        case _                       => Nil
+      }
+    )
   )
 
 lazy val coreJS = core.js
@@ -74,22 +105,22 @@ lazy val dom = project
     normalizedName := "levsha-dom",
     //scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.7"
+      ("org.scala-js" %%% "scalajs-dom" % "1.1.0").cross(CrossVersion.for3Use2_13)
     )
   )
 
-lazy val bench = project
-  .enablePlugins(JmhPlugin)
-  .enablePlugins(SbtTwirl)
-  .settings(commonSettings: _*)
-  .settings(dontPublishSettings: _*)
-  .dependsOn(coreJVM)
-  .settings(
-    normalizedName := "levsha-bench",
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "scalatags" % "0.6.7"
-    )
-  )
+//lazy val bench = project
+//  .enablePlugins(JmhPlugin)
+//  .enablePlugins(SbtTwirl)
+//  .settings(commonSettings: _*)
+//  .settings(dontPublishSettings: _*)
+//  .dependsOn(coreJVM)
+//  .settings(
+//    normalizedName := "levsha-bench",
+//    libraryDependencies ++= Seq(
+//      ("com.lihaoyi" %% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
+//    )
+//  )
 
 lazy val root = project
   .in(file("."))

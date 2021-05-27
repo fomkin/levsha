@@ -94,7 +94,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       // Optimize control flow
       case q"if ($cond) ${lhs: Tree} else ${rhs: Tree}" =>
         q"if ($cond) ${aux(lhs)} else ${aux(rhs)}"
-      case q"levsha.dsl.`package`.when[$_, $_]($cond)(${tree: Tree})" =>
+      case q"levsha.dsl.`package`.when[$_, $_]($cond)($tree)($ev)" =>
         q"if ($cond) ${aux(tree)}"
       case q"$expr match { case ..$cases }" =>
         val optimizedCases = cases map {
@@ -103,7 +103,8 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
         }
         q"$expr match { case ..$optimizedCases }"
       // Can't optimize
-      case expr if expr.tpe <:< weakTypeOf[levsha.Document[T]] => q"$expr.apply(rc)"
+      case expr if expr.tpe <:< weakTypeOf[levsha.Document[T]] =>
+        q"$expr.apply(rc)"
       // Skip this code
       case _ => tree
     }
