@@ -40,7 +40,7 @@ object Change {
   case class createText(id: List[Int], text: String) extends Change
   case class create(id: List[Int], tag: String, xmlNs: String) extends Change
 
-  implicit val ordering = new Ordering[Change] {
+  implicit val ordering: Ordering[Change] = new Ordering[Change] {
     import Ordering.Implicits._
     private val underlying = implicitly[Ordering[List[Int]]]
     def compare(x: Change, y: Change): Int = {

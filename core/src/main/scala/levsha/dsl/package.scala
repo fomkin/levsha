@@ -19,20 +19,8 @@ package levsha
 import levsha.Document.{Attr, Empty, Node, Style}
 
 import scala.language.implicitConversions
-import scala.language.experimental.macros
 
-package object dsl {
-
-  /**
-    * Optimize template to monolith (if possible) [[levsha.Document.Node]] in compile time.
-    * Note this method touched by non-idempotent typechecking bug of Scala compiler.
-    * It means, sometimes your code could be broken. Try not to insert non-DSL code
-    * into `optimize {}` call.
-    *
-    * @see https://github.com/scala/bug/issues/5464
-    * @see https://github.com/fomkin/levsha#memory-allocation-model-explanation
-    */
-  def optimize[T](node: Node[T]): Node[T] = macro DslOptimizerMacro.optimize[T]
+package object dsl extends levsha.dsl.Optimize {
 
   trait TagDef {
     def ns: XmlNs
@@ -108,8 +96,8 @@ package object dsl {
     * )
     * }}}
     */
-  def when[T, D <: Document[T]](condition: Boolean)(doc: D): D =
-    if (condition) doc else Empty.asInstanceOf[D]
+  def when[T, D >: Document[T]](condition: Boolean)(doc: D)(implicit ev: Document[T] =:= D): D =
+    if (condition) doc else ev(Empty)
 
   /**
     * Use it when want overwrite default click behavior.

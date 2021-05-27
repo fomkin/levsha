@@ -8,8 +8,8 @@ object IdBuilderTest extends utest.TestSuite {
   import utest._
 
   val tests = this {
-    'IdCounter {
-      "should increment id on first level" - {
+    test("IdCounter") - {
+      test("should increment id on first level") - {
         val counter = IdBuilder()
         counter.incId()
         counter.incId()
@@ -17,7 +17,7 @@ object IdBuilderTest extends utest.TestSuite {
         val res = counter.mkString
         assert(res == "3")
       }
-      "should increment id on second level" - {
+      test("should increment id on second level") - {
         val counter = IdBuilder()
         counter.incLevel()
         counter.incId()
@@ -26,7 +26,7 @@ object IdBuilderTest extends utest.TestSuite {
         val res = counter.mkString
         assert(res == "0_3")
       }
-      "should increment id on third level" - {
+      test("should increment id on third level") - {
         val counter = IdBuilder()
         counter.incLevel()
         counter.incLevel()
@@ -36,7 +36,7 @@ object IdBuilderTest extends utest.TestSuite {
         val res = counter.mkString
         assert(res == "0_0_3")
       }
-      "should successfully decrement level" - {
+      test("should successfully decrement level") - {
         val counter = IdBuilder()
         counter.incId()
         counter.incLevel()
@@ -49,7 +49,7 @@ object IdBuilderTest extends utest.TestSuite {
         val res = counter.mkString
         assert(res == "1")
       }
-      "should reset level on decrement" - {
+      test("should reset level on decrement") - {
         val counter = IdBuilder()
         counter.incLevel()
         counter.incId()

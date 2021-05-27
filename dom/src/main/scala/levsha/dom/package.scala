@@ -16,7 +16,6 @@
 
 package levsha
 
-import levsha.dsl.SymbolDsl
 import levsha.events.{EventId, EventPhase}
 import levsha.impl.DiffRenderContext
 import org.scalajs.dom.Element
@@ -37,7 +36,7 @@ package object dom {
     val miscBuffer = mutable.Buffer.empty[(Id, Misc)]
     var events = Map.empty[EventId, () => Any]
     val performer = new DomChangesPerformer(root)
-    val renderContext = DiffRenderContext[Misc](onMisc = Function.untupled(miscBuffer.+=))
+    val renderContext = DiffRenderContext[Misc](onMisc = Function.untupled(miscBuffer.+=(_)))
     val registeredNativeEvents = mutable.Set.empty[String]
     val nativeEventHandler = { (nativeEvent: browser.Event) =>
       nativeEvent.target.asInstanceOf[js.Dynamic].vid.asInstanceOf[Any] match {
@@ -69,8 +68,6 @@ package object dom {
   }
 
   private val roots = mutable.Map.empty[Element, Root]
-
-  val symbolDsl = new SymbolDsl[Misc]
 
   def render(target: Element)(node: Document.Node[Misc]): Unit = {
     val root = roots.getOrElseUpdate(target, new Root(target))
