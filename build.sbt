@@ -38,10 +38,14 @@ def additionalUnmanagedSources(cfg: Configuration) = Def.setting {
   }
 }
 
-val commonSettings = Seq(
-  organization := "com.github.fomkin",
-  scalaVersion := "3.0.0",
+val crossVersionSettings = Seq(
   crossScalaVersions := Seq("2.13.6", "2.12.11", "3.0.0"),
+  scalaVersion := "3.0.0",
+)
+
+val commonSettings = Seq(
+  scalaVersion := "2.13.6",
+  organization := "com.github.fomkin",
   git.useGitDescribe := true,
   scalacOptions ++= Seq(
     "-deprecation",
@@ -64,6 +68,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .enablePlugins(GitVersioning)
   .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)
+  .settings(crossVersionSettings:_*)
   .settings(publishSettings: _*)
   .settings(
     normalizedName := "levsha-core",
@@ -84,6 +89,7 @@ lazy val events = crossProject(JSPlatform, JVMPlatform)
   .enablePlugins(GitVersioning)
   .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)
+  .settings(crossVersionSettings:_*)
   .settings(publishSettings: _*)
   .settings(normalizedName := "levsha-events")
   .dependsOn(core)
@@ -96,6 +102,7 @@ lazy val dom = project
   .enablePlugins(GitVersioning)
   .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)
+  .settings(crossVersionSettings:_*)
   .settings(publishSettings: _*)
   .dependsOn(coreJS)
   .dependsOn(eventsJS)
@@ -107,22 +114,23 @@ lazy val dom = project
     )
   )
 
-//lazy val bench = project
-//  .enablePlugins(JmhPlugin)
-//  .enablePlugins(SbtTwirl)
-//  .settings(commonSettings: _*)
-//  .settings(dontPublishSettings: _*)
-//  .dependsOn(coreJVM)
-//  .settings(
-//    normalizedName := "levsha-bench",
-//    libraryDependencies ++= Seq(
-//      ("com.lihaoyi" %% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
-//    )
-//  )
+lazy val bench = project
+  .enablePlugins(JmhPlugin)
+  .enablePlugins(SbtTwirl)
+  .settings(commonSettings: _*)
+  .settings(dontPublishSettings: _*)
+  .dependsOn(coreJVM)
+  .settings(
+    normalizedName := "levsha-bench",
+    libraryDependencies ++= Seq(
+      ("com.lihaoyi" %% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
+    )
+  )
 
 lazy val root = project
   .in(file("."))
   .settings(commonSettings:_*)
+  .settings(crossVersionSettings:_*)
   .settings(dontPublishSettings:_*  )
   .settings(normalizedName := "levsha")
   .aggregate(

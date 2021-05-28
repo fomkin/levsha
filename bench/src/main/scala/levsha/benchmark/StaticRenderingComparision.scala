@@ -1,6 +1,7 @@
 package levsha.benchmark
 
 import org.openjdk.jmh.annotations.{Benchmark, Param, Scope, State}
+import levsha.dsl.SymbolDsl
 
 @State(Scope.Benchmark)
 class StaticRenderingComparision {
@@ -28,9 +29,11 @@ object StaticRenderingComparision {
 
     "levsha" -> new TemplateEngine {
 
+      val symbolDsl = new SymbolDsl[Nothing]()
+
       import sharedContent._
-      import levsha.text.symbolDsl._
       import levsha.text.renderHtml
+      import symbolDsl._
 
       def simpleHtml(): Unit = {
         renderHtml {
