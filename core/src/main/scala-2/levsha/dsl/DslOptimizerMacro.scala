@@ -16,17 +16,20 @@
 
 package levsha.dsl
 
-import levsha.Document.{Attr, Node, Style}
+import levsha.Document.{Attr, Node, Style, Empty => DEmpty}
 
 import scala.reflect.macros.blackbox
 
 final class DslOptimizerMacro(val c: blackbox.Context) {
 
+  import DslOptimizerUtils._
   import c.universe._
 
   def optimize[T: WeakTypeTag](node: Tree): Tree = {
 
     val T = weakTypeTag[T]
+
+    cleanupUnableToOptimizeFile // Run once at first start of macro
 
     def optimizeSeq(seq: Tree, f: Function) = {
       val argName = f.vparams.head.name
@@ -41,28 +44,49 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       """
     }
 
+    def containsUnspecifiedDocument(children: Seq[Tree]) = children.exists {
+      case x if x.tpe <:< weakTypeOf[DEmpty.type] => false
+      case x if x.tpe <:< weakTypeOf[Style[T]] => false
+      case x if x.tpe <:< weakTypeOf[Attr[T]] => false
+      case x if x.tpe <:< weakTypeOf[Node[T]] => false
+      case x => true
+    }
+
+    def logUnableToOptimizeTree(tree: Tree): Unit = {
+      val pos = tree.pos
+      logUnableToOptimize(
+        pos.source.path, pos.line, 
+        pos.column, Some(pos.lineContent)
+      )
+    }
+
     def aux(tree: Tree): Tree = tree match {
       // Optimize tag open/close
       case q"$tagDef.apply[$_](..$children)" if tagDef.tpe <:< weakTypeOf[TagDef] =>
-        val transformedChildren = children
-          .sortBy {
-            case x if x.tpe <:< weakTypeOf[Style[T]] => -2
-            case x if x.tpe <:< weakTypeOf[Attr[T]] => -1
-            case x if x.tpe <:< weakTypeOf[Node[T]] => 0
-            case x =>
-              if(unableToSortTagWarningsEnabled) {
-                c.warning(
-                  x.pos,
-                  "Unable to sort tag content in compile time. Ensure you add attributes and styles first.")
-              }
-              0
-          }
-          .map(aux)
-        q"""
-            rc.openNode($tagDef.ns, $tagDef.name)
-            ..$transformedChildren
-            rc.closeNode($tagDef.name)
-          """
+        if (!containsUnspecifiedDocument(children) || unableToSortForceOptimization) {
+          val transformedChildren = children
+            .sortBy {
+              case x if x.tpe <:< weakTypeOf[Style[T]] => -2
+              case x if x.tpe <:< weakTypeOf[Attr[T]] => -1
+              case x if x.tpe <:< weakTypeOf[Node[T]] => 0
+              case x =>
+                if(unableToSortTagWarningsEnabled) {
+                  c.warning(
+                    x.pos,
+                    "Unable to sort tag content in compile time. Ensure you add attributes and styles first.")
+                }
+                0
+            }
+            .map(aux)
+          q"""
+              rc.openNode($tagDef.ns, $tagDef.name)
+              ..$transformedChildren
+              rc.closeNode($tagDef.name)
+            """
+        } else {
+          logUnableToOptimizeTree(tree)
+          q"$tree.apply(rc)"
+        }
       // Optimize attributes and styles
       case q"$styleDef.@=[$_]($styleValue)" =>
         q"rc.setStyle($styleDef.name, $styleValue)"
@@ -104,6 +128,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
         q"$expr match { case ..$optimizedCases }"
       // Can't optimize
       case expr if expr.tpe <:< weakTypeOf[levsha.Document[T]] =>
+        logUnableToOptimizeTree(expr)
         q"$expr.apply(rc)"
       // Skip this code
       case _ => tree
@@ -141,10 +166,4 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
     }
   }
 
-  private val unableToSortTagWarningsEnabled = {
-    val propName = "levsha.optimizer.unableToSortTagWarnings"
-    sys.props.get(propName)
-      .orElse(sys.env.get(propName))
-      .fold(false)(x => if (x == "true") true else false)
-  }
 }

@@ -24,6 +24,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
+import DslOptimizerUtils.* 
 
 object DslOptimizerMacro:
 
@@ -34,32 +35,54 @@ object DslOptimizerMacro:
 
     cleanupUnableToOptimizeFile // Run once at first start of macro
 
+    def containsUnspecifiedDocument(xs: Seq[Expr[Document[T]]]) = xs.exists {
+      case '{Empty} => false
+      case x if x.isExprOf[Style[T]] => false
+      case x if x.isExprOf[Attr[T]] => false
+      case x if x.isExprOf[Node[T]] => false
+      case _ => true
+    }
+
+    def logUnableToOptimizeTerm(term: Term): Unit =
+      val pos = term.pos
+      logUnableToOptimize(
+        pos.sourceFile.toString, pos.startLine + 1, 
+        pos.startColumn + 1, pos.sourceCode
+      )
+
+    def optimizeNode(rc: Expr[RenderContext[T]], tagDef: Expr[TagDef], children: Seq[Expr[Document[T]]]) =
+      val xs = children
+        .sortBy {
+          case '{Empty} => 0
+          case x if x.isExprOf[Style[T]] => -2
+          case x if x.isExprOf[Attr[T]] => -1
+          case x if x.isExprOf[Node[T]] => 0
+          case x => 
+            if (unableToSortTagWarningsEnabled)
+              report.warning(unableToSortTagWarning, x)
+            0
+        }
+        .map(aux(rc, _))
+        .toList
+      val block = xs match {
+        case Nil => '{}
+        case x :: Nil => x
+        case _ => Expr.block(xs.dropRight(1), xs.last)
+      }
+      '{
+        $rc.openNode($tagDef.ns, $tagDef.name)
+        $block
+        $rc.closeNode($tagDef.name)
+      }
+
     def aux(rc: Expr[RenderContext[T]], targetExpr: Expr[Document[T]]): Expr[Any] = targetExpr match {
       // Optimize tag open/close
       case '{(${tagDef}: TagDef).apply[T](${Varargs(children)}:_*)} =>
-        val xs = children
-          .sortBy {
-            case '{Empty} => 0
-            case x if x.isExprOf[Style[T]] => -2
-            case x if x.isExprOf[Attr[T]] => -1
-            case x if x.isExprOf[Node[T]] => 0
-            case x =>
-              if (unableToSortTagWarningsEnabled)
-                report.warning(unableToSortTagWarning, x)
-              0
-          }
-          .map(aux(rc, _))
-          .toList
-        val block = xs match {
-          case Nil => '{}
-          case x :: Nil => x
-          case _ => Expr.block(xs.dropRight(1), xs.last)
-        }
-        '{
-          $rc.openNode($tagDef.ns, $tagDef.name)
-          $block
-          $rc.closeNode($tagDef.name)
-        }
+        if !containsUnspecifiedDocument(children) | unableToSortForceOptimization then
+          optimizeNode(rc, tagDef, children)
+        else
+          logUnableToOptimizeTerm(targetExpr.asTerm)
+          '{$targetExpr.apply($rc)}          
       // Optimize attributes and styles
       case '{(${styleDef}: StyleDef).@=[T]($styleValue)} =>
         '{$rc.setStyle($styleDef.name, $styleValue)}
@@ -115,22 +138,12 @@ object DslOptimizerMacro:
             Match
               .copy(tree)(selector, cs)
               .asExpr
-          // Can't optimize
+          // Unable to optimize
           case term => 
             // DEBUG
             // report.info(term.show)
             // ---
-            logUnableToOptimize.foreach { path =>
-              val pos = term.pos
-              val code = pos.sourceCode
-                .map(_.replace("\n", ";"))
-                .fold("") {
-                  case s if s.length < logUnableToOptimizeCodeExampleMaxLength => s
-                  case s => s.take(logUnableToOptimizeCodeExampleMaxLength) + "..."
-                }
-              val message = s"${pos.sourceFile};${pos.startLine+1};${pos.startColumn+1};$code\n"
-              Files.write(path, message.getBytes, StandardOpenOption.APPEND)
-            }
+            logUnableToOptimizeTerm(term)
             '{$targetExpr.apply($rc)}
         }
     }
@@ -145,37 +158,5 @@ object DslOptimizerMacro:
     //report.info(optimized.show)
     // ---
     optimized 
-
-  private val logUnableToOptimizeCodeExampleMaxLength = 40
-
-  private val unableToSortTagWarning = "Unable to sort tag content in compile time. Ensure you add attributes and styles first."
-
-  private val unableToSortTagWarningsEnabled =
-    val propName = "levsha.optimizer.unableToSortTagWarnings"
-    sys.props.get(propName)
-      .orElse(sys.env.get(propName))
-      .fold(true) {
-        case "true" | "on" | "1" => true
-        case "false" | "off" | "0" | "" => false
-      }
-
-  private val logUnableToOptimize: Option[Path] =
-    val propName = "levsha.optimizer.logUnableToOptimize"
-    sys.props.get(propName)
-      .orElse(sys.env.get(propName))
-      .fold(None) {
-        case "false" | "0" | "" => None
-        case "true" | "1" => Some(Paths.get("levsha-unable-to-optimize.csv"))
-        case path => Some(Paths.get(path))
-      }
-
-  private lazy val cleanupUnableToOptimizeFile =
-    logUnableToOptimize.foreach { path => 
-      val message = "File;Line;Column;Code\n"
-      if (Files.exists(path))
-        Files.delete(path)
-      Files.createFile(path)
-      Files.write(path, message.getBytes, StandardOpenOption.APPEND)
-    }
 
 end DslOptimizerMacro
