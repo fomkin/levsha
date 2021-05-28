@@ -1,6 +1,6 @@
 # Levsha
 
-Levsha is a fast HTML template engine and Scala eDSL. Optimized templates works without additional memory allocation. 
+Levsha is a fast HTML template engine and eDSL for Scala 2.12, 2.13 and Scala 3. Optimized templates works without additional memory allocation. 
 Levsha supports changeset inference, which allows to use it as virtual-dom-like middleware. 
 
 ## Static rendering
@@ -9,7 +9,7 @@ You can use Levsha as a static HTML renderer.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %% "levsha-core" % "0.9.0"
+libraryDependencies += "com.github.fomkin" %% "levsha-core" % "1.0.0"
 ```
 
 ```scala
@@ -82,7 +82,7 @@ Levsha's memory usage is constant.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "0.9.0"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "1.0.0"
 ```
 
 ```scala
