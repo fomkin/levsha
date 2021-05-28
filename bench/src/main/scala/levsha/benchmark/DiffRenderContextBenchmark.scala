@@ -4,9 +4,9 @@ import levsha.impl.DiffRenderContext
 import org.openjdk.jmh.annotations.Benchmark
 import levsha.dsl._
 import levsha.dsl.html
-import html.tags.{button, div, li, span, input, ul, p, form}
-import html.attributes.{lang, clazz, name, style}
-import html.styles.{backgroundColor, margin, padding, border}
+import html.{button, div, li, span, input, ul, p, form}
+import html.{lang, clazz, name, style}
+import html.{backgroundColor, margin, padding, border}
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
