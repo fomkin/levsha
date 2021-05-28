@@ -45,7 +45,10 @@ object DefaultDslTest extends utest.TestSuite {
   }
 
   def ifexpr1(expr: Boolean): Node[Nothing] =
-    optimize(div(if (expr) clazz := "hello" else void))
+    optimize {
+      val hello = "hello"
+      div(if (expr) clazz := hello else void)
+    }
   def ifexpr2(expr: Boolean): Node[Nothing] =
     optimize(div(if (expr) void else clazz := "hello"))
   def ifexpr3(expr: Boolean): Node[Nothing] =
