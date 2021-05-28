@@ -159,10 +159,12 @@ their templates as AST on-heap).
 For example,
 
 ```scala
-div(clazz := "content", 
-  h1("Hello world"),
-  p("Lorem ipsum dolor")
-)
+optimize {
+  div(clazz := "content", 
+    h1("Hello world"),
+    p("Lorem ipsum dolor")
+  )
+}
 ```
 
 Will be rewritten to
@@ -189,11 +191,13 @@ When optimization can't be performed Levsha just
 applies current `RenderContext` to the unoptimized node.
 
 ```scala
-ul(
-  Seq(1, 2, 3, 4, 5, 6, 7).collect { 
-    case x if x % 2 == 0 => li(x.toString)
-  }
-)
+optimize {
+  ul(
+    Seq(1, 2, 3, 4, 5, 6, 7).collect { 
+      case x if x % 2 == 0 => li(x.toString)
+    }
+  )
+}
 
 // ==>
 
@@ -228,11 +232,13 @@ The third item of this list shows us how to rewrite
 previous example so that optimization could be performed.
 
 ```scala
-ul(
-  Seq(1, 2, 3, 4, 5, 6, 7)
-    .filter(x => x % 2 == 0)
-    .map { x => li(x.toString) }
-)
+optimize {
+  ul(
+    Seq(1, 2, 3, 4, 5, 6, 7)
+      .filter(x => x % 2 == 0)
+      .map { x => li(x.toString) }
+  )
+}
 
 // ==>
 
@@ -252,13 +258,17 @@ Node { renderContext =>
 ```
 ## Optimizer options
 
-You can pass this options to SBT `sbt -Doption=value`.
+You can pass this options to SBT.
 
-Option | Scala | Description | Possible values | Default
---- | --- | --- | --- | ---
-`levsha.optimizer.unableToSortTagWarnings` | 2, 3 | Warn that optimizer can't sort tag content in compile time. | true/false | false in Scala 2, true in Scala 3.
-`levsha.optimizer.logUnableToOptimize` | 3 | Write positions of unoptimized parts of code to a file. | true/false or file name | false
-`levsha.optimizer.sortTagsInRuntimeFallback` | 3 | If tag node content couldn't be sorted in runtime, optimized will switch to run time. Switch it off, but keep in mind that node content should be ordered (styles, attrs, nodes). When fallback is switched of you will receive waringn | true/false | true
+```bash
+$ sbt -Doption=value
+```
+
+Option | Description | Possible values | Default
+--- | --- | --- | ---
+`levsha.optimizer.logUnableToOptimize` | Write positions of unoptimized parts of code to a file. | true/false or file name | false
+`levsha.optimizer.unableToSort.forceOptimization` | If tag node content couldn't be sorted in compile time, optimizer will keep the code unoptimized (so content will be sorted in runtime). You can force optimizer to ignore unspecified Documents (that couldn't be sorted) and optimize anyway, but keep in mind that node content should be ordered (styles, attrs, nodes). | true/false | false
+`levsha.optimizer.unableToSort.warnings` | Warns that optimizer can't sort tag content when optimization is forced. | true/false | true
  
 
 ## Worthy to note
