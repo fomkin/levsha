@@ -20,7 +20,7 @@ import levsha.Document.{Attr, Empty, Node, Style}
 
 import scala.language.implicitConversions
 
-package object dsl extends levsha.dsl.Optimize {
+package object dsl extends Optimize {
 
   trait TagDef {
     def ns: XmlNs

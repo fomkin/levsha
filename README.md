@@ -250,6 +250,16 @@ Node { renderContext =>
   renderContext.closeNode("div")
 }
 ```
+## Optimizer options
+
+You can pass this options to SBT `sbt -Doption=value`.
+
+Option | Scala | Description | Possible values | Default
+--- | --- | --- | --- | ---
+`levsha.optimizer.unableToSortTagWarnings` | 2, 3 | Warn that optimizer can't sort tag content in compile time. | true/false | false in Scala 2, true in Scala 3.
+`levsha.optimizer.logUnableToOptimize` | 3 | Write positions of unoptimized parts of code to a file. | true/false or file name | false
+`levsha.optimizer.sortTagsInRuntimeFallback` | 3 | If tag node content couldn't be sorted in runtime, optimized will switch to run time. Switch it off, but keep in mind that node content should be ordered (styles, attrs, nodes). When fallback is switched of you will receive waringn | true/false | true
+ 
 
 ## Worthy to note
 

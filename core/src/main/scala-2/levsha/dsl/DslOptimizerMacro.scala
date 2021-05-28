@@ -142,7 +142,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
   }
 
   private val unableToSortTagWarningsEnabled = {
-    val propName = "levsha.macros.unableToSortTagWarnings"
+    val propName = "levsha.optimizer.unableToSortTagWarnings"
     sys.props.get(propName)
       .orElse(sys.env.get(propName))
       .fold(false)(x => if (x == "true") true else false)

@@ -20,25 +20,33 @@ import levsha.Document
 import levsha.RenderContext
 import Document.{Attr, Node, Style, Empty}
 import scala.quoted.*
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
-object DslOptimizerMacro {
+object DslOptimizerMacro:
 
-  def optimize[T: Type](node: Expr[Node[T]])(using Quotes): Expr[Node[T]] = {
+  def optimize[T: Type](node: Expr[Node[T]])(using Quotes): Expr[Node[T]] =
 
     import quotes.reflect.*
     import util.*
 
-    val t = Type.of[T]
+    cleanupUnableToOptimizeFile // Run once at first start of macro
 
-    def aux(rc: Expr[RenderContext[T]], tree: Expr[Document[T]]): Expr[Any] = tree match {
+    def aux(rc: Expr[RenderContext[T]], targetExpr: Expr[Document[T]]): Expr[Any] = targetExpr match {
       // Optimize tag open/close
       case '{(${tagDef}: TagDef).apply[T](${Varargs(children)}:_*)} =>
         val xs = children
           .sortBy {
+            case '{Empty} => 0
             case x if x.isExprOf[Style[T]] => -2
             case x if x.isExprOf[Attr[T]] => -1
             case x if x.isExprOf[Node[T]] => 0
-            case x => 0
+            case x =>
+              if (unableToSortTagWarningsEnabled)
+                report.warning(unableToSortTagWarning, x)
+              0
           }
           .map(aux(rc, _))
           .toList
@@ -60,37 +68,28 @@ object DslOptimizerMacro {
       // Optimize converters
       case '{stringToNode($value)} => '{$rc.addTextNode($value)}
       case '{miscToNode[T]($value)} => '{$rc.addMisc($value)}
-      // case '{optionToNode[T](($opt: Option[x]).map($f))} =>
-      //   f.asTerm match {
-      //     case Lambda((arg :: Nil, body)) => 
-      //       body.
-      //       report.info(s"yay $args $body")  
-      //       // '{
-      //       //   if ($opt.nonEmpty) {
-      //       //     val $x = $opt.get
-      //       //     ${aux(rc, ff)}
-      //       //   }
-      //       // }
-      //       f
-      //     case _ =>
-      //       report.info(s"fuck ${f.show}")  
-      //       f
-      //   }
-//       case converter("optionToNode" | "optionToAttr", q"($opt).map[$b](${f: Function})") =>
-//         val argName = f.vparams.head.name
-//         val body = aux(f.body)
-//         val cleanBody = clearIdents(List("rc", argName.toString), body)
-//         q"""
-//           val $$opt = $opt
-//           if ($$opt.nonEmpty) {
-//             val $argName = $$opt.get
-//             $cleanBody
-//           }
-//         """
-//       // scala 2.12
-//       case converter("seqToNode", q"(${seq: Tree}).map[$_, $_](${f: Function})($_)") => optimizeSeq(seq, f)
-//       // scala 2.13
-//       case converter("seqToNode", q"${seq: Tree}.map[$_](${f: Function})") => optimizeSeq(seq, f)
+      case '{optionToNode[T](($opt: Option[x]).map($f))} =>
+          '{
+            if ($opt.nonEmpty) {
+              val x = $opt.get
+              ${aux(rc, Expr.betaReduce('{($f)(x)}))}
+            }
+          }
+      case '{optionToAttr[T](($opt: Option[x]).map($f))} =>
+          '{
+            if ($opt.nonEmpty) {
+              val x = $opt.get
+              ${aux(rc, Expr.betaReduce('{($f)(x)}))}
+            }
+          }
+      case '{seqToNode[T](($seq: Seq[x]).map($f))} =>
+          '{
+            val i = $seq.iterator
+            while (i.hasNext) {
+              val x = i.next
+              ${aux(rc, Expr.betaReduce('{($f)(x)}))}
+            }
+          }
       // Optimize empty nodes
       case '{void} => '{}
       case '{Empty} => '{}
@@ -99,15 +98,41 @@ object DslOptimizerMacro {
         '{if ($cond) ${aux(rc, lhs)} else ${aux(rc, rhs)}}
       case '{when($cond)(($expr: Document[T]))($ev)} =>
         '{if ($cond) ${aux(rc, expr)}}
-      // case q"$expr match { case ..$cases }" =>
-      //   val optimizedCases = cases map {
-      //     case cq"$p => ${b: Tree}" => cq"$p => ${aux(b)}"
-      //     case cq"$p if $c => ${b: Tree}" => cq"$p if $c => ${aux(b)}"
-      //   }
-      //   q"$expr match { case ..$optimizedCases }"
-      // Can't optimize
+      // Corner cases
       case _ =>
-        '{$tree.apply($rc)}
+        def trasformBlock(statements: List[Statement], expr: Term): Term =
+          val uExpr = aux(rc, expr.asExprOf[Document[T]])
+          Block(statements, uExpr.asTerm)
+        targetExpr.asTerm match {
+          case Inlined(_, _, Block(statements, expr)) => trasformBlock(statements, expr).asExpr
+          case Block(statements, expr) => trasformBlock(statements, expr).asExpr
+          case tree @ Match(selector, cases) =>
+            val cs = cases.map {
+              case CaseDef(pat, guard, body) =>
+                val uBody = aux(rc, body.asExprOf[Document[T]])
+                CaseDef(pat, guard, uBody.asTerm)
+            }
+            Match
+              .copy(tree)(selector, cs)
+              .asExpr
+          // Can't optimize
+          case term => 
+            // DEBUG
+            // report.info(term.show)
+            // ---
+            logUnableToOptimize.foreach { path =>
+              val pos = term.pos
+              val code = pos.sourceCode
+                .map(_.replace("\n", ";"))
+                .fold("") {
+                  case s if s.length < logUnableToOptimizeCodeExampleMaxLength => s
+                  case s => s.take(logUnableToOptimizeCodeExampleMaxLength) + "..."
+                }
+              val message = s"${pos.sourceFile};${pos.startLine+1};${pos.startColumn+1};$code\n"
+              Files.write(path, message.getBytes, StandardOpenOption.APPEND)
+            }
+            '{$targetExpr.apply($rc)}
+        }
     }
     
     val optimized = '{
@@ -115,9 +140,42 @@ object DslOptimizerMacro {
         ${aux('{rc}, node)}
       }
     }
+
     // DEBUG
     //report.info(optimized.show)
+    // ---
     optimized 
-  }
 
-}
+  private val logUnableToOptimizeCodeExampleMaxLength = 40
+
+  private val unableToSortTagWarning = "Unable to sort tag content in compile time. Ensure you add attributes and styles first."
+
+  private val unableToSortTagWarningsEnabled =
+    val propName = "levsha.optimizer.unableToSortTagWarnings"
+    sys.props.get(propName)
+      .orElse(sys.env.get(propName))
+      .fold(true) {
+        case "true" | "on" | "1" => true
+        case "false" | "off" | "0" | "" => false
+      }
+
+  private val logUnableToOptimize: Option[Path] =
+    val propName = "levsha.optimizer.logUnableToOptimize"
+    sys.props.get(propName)
+      .orElse(sys.env.get(propName))
+      .fold(None) {
+        case "false" | "0" | "" => None
+        case "true" | "1" => Some(Paths.get("levsha-unable-to-optimize.csv"))
+        case path => Some(Paths.get(path))
+      }
+
+  private lazy val cleanupUnableToOptimizeFile =
+    logUnableToOptimize.foreach { path => 
+      val message = "File;Line;Column;Code\n"
+      if (Files.exists(path))
+        Files.delete(path)
+      Files.createFile(path)
+      Files.write(path, message.getBytes, StandardOpenOption.APPEND)
+    }
+
+end DslOptimizerMacro

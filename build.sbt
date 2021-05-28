@@ -3,8 +3,6 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val unusedRepo = Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
-scalaVersion := "3.0.0"
-
 val publishSettings = Seq(
   publishTo := sonatypePublishTo.value,
   publishArtifact in Test := false,
@@ -56,8 +54,8 @@ val commonSettings = Seq(
     "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
   ),
   // Add some more source directories
-  managedSourceDirectories in Compile ++= additionalUnmanagedSources(Compile).value,
-  managedSourceDirectories in Test ++= additionalUnmanagedSources(Test).value
+  unmanagedSourceDirectories in Compile ++= additionalUnmanagedSources(Compile).value,
+  unmanagedSourceDirectories in Test ++= additionalUnmanagedSources(Test).value
 )
 
 
