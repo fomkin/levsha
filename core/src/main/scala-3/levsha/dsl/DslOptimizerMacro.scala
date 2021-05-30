@@ -17,14 +17,17 @@
 package levsha.dsl
 
 import levsha.Document
+import levsha.Document.{Attr, Empty, Node, Style}
 import levsha.RenderContext
-import Document.{Attr, Node, Style, Empty}
+
 import scala.quoted.*
+import scala.annotation.tailrec
+
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
-import DslOptimizerUtils.* 
+import DslOptimizerUtils.*
 
 object DslOptimizerMacro:
 
@@ -35,13 +38,19 @@ object DslOptimizerMacro:
 
     cleanupUnableToOptimizeFile // Run once at first start of macro
 
-    def containsUnspecifiedDocument(xs: Seq[Expr[Document[T]]]) = xs.exists {
-      case '{Empty} => false
-      case x if x.isExprOf[Style[T]] => false
-      case x if x.isExprOf[Attr[T]] => false
-      case x if x.isExprOf[Node[T]] => false
-      case _ => true
+    @tailrec
+    def orderDocument(expr: Expr[Document[T]]): Int = expr match {
+      case '{when[T]($cond)($expr)} => orderDocument(expr)
+      case '{Empty} => -3
+      case '{void} => -3
+      case x if x.isExprOf[Style[T]] => -3
+      case x if x.isExprOf[Attr[T]] => -2
+      case x if x.isExprOf[Node[T]] => -1
+      case _ => 0
     }
+
+    def containsUnspecifiedDocument(xs: Seq[Expr[Document[T]]]): Boolean =
+      xs.exists(x => orderDocument(x) == 0)
 
     def logUnableToOptimizeTerm(term: Term): Unit =
       val pos = term.pos
@@ -52,15 +61,11 @@ object DslOptimizerMacro:
 
     def optimizeNode(rc: Expr[RenderContext[T]], tagDef: Expr[TagDef], children: Seq[Expr[Document[T]]]) =
       val xs = children
-        .sortBy {
-          case '{Empty} => 0
-          case x if x.isExprOf[Style[T]] => -2
-          case x if x.isExprOf[Attr[T]] => -1
-          case x if x.isExprOf[Node[T]] => 0
-          case x => 
-            if (unableToSortTagWarningsEnabled)
-              report.warning(unableToSortTagWarning, x)
-            0
+        .sortBy { x =>
+          val order = orderDocument(x)
+          if (order == 0 && unableToSortTagWarningsEnabled)
+            report.warning(unableToSortTagWarning, x)
+          order
         }
         .map(aux(rc, _))
         .toList
@@ -74,7 +79,6 @@ object DslOptimizerMacro:
         $block
         $rc.closeNode($tagDef.name)
       }
-
     def aux(rc: Expr[RenderContext[T]], targetExpr: Expr[Document[T]]): Expr[Any] = targetExpr match {
       // Optimize tag open/close
       case '{(${tagDef}: TagDef).apply[T](${Varargs(children)}:_*)} =>
@@ -105,6 +109,13 @@ object DslOptimizerMacro:
               ${aux(rc, Expr.betaReduce('{($f)(x)}))}
             }
           }
+      case '{optionToStyle[T](($opt: Option[x]).map($f))} =>
+        '{
+          if ($opt.nonEmpty) {
+            val x = $opt.get
+            ${aux(rc, Expr.betaReduce('{($f)(x)}))}
+          }
+        }
       case '{seqToNode[T](($seq: Seq[x]).map($f))} =>
           '{
             val i = $seq.iterator
@@ -113,13 +124,29 @@ object DslOptimizerMacro:
               ${aux(rc, Expr.betaReduce('{($f)(x)}))}
             }
           }
+      case '{seqToAttr[T](($seq: Seq[x]).map($f))} =>
+        '{
+          val i = $seq.iterator
+          while (i.hasNext) {
+            val x = i.next
+            ${aux(rc, Expr.betaReduce('{($f)(x)}))}
+          }
+        }
+      case '{seqToStyle[T](($seq: Seq[x]).map($f))} =>
+        '{
+          val i = $seq.iterator
+          while (i.hasNext) {
+            val x = i.next
+            ${aux(rc, Expr.betaReduce('{($f)(x)}))}
+          }
+        }
       // Optimize empty nodes
       case '{void} => '{}
       case '{Empty} => '{}
       // Optimize control flow
       case '{if ($cond) ($lhs: Document[T]) else ($rhs: Document[T])} =>
         '{if ($cond) ${aux(rc, lhs)} else ${aux(rc, rhs)}}
-      case '{when($cond)(($expr: Document[T]))($ev)} =>
+      case '{when($cond)(($expr: Document[T]))} =>
         '{if ($cond) ${aux(rc, expr)}}
       // Corner cases
       case _ =>

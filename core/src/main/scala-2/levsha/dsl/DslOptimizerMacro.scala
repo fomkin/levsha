@@ -97,7 +97,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       // Optimize converters
       case converter("stringToNode", value) => q"rc.addTextNode($value)"
       case converter("miscToNode", value) => q"rc.addMisc($value)"
-      case converter("optionToNode" | "optionToAttr", q"($opt).map[$b](${f: Function})") =>
+      case converter("optionToNode" | "optionToAttr" | "optionToStyle", q"($opt).map[$b](${f: Function})") =>
         val argName = f.vparams.head.name
         val body = aux(f.body)
         val cleanBody = clearIdents(List("rc", argName.toString), body)
@@ -118,7 +118,7 @@ final class DslOptimizerMacro(val c: blackbox.Context) {
       // Optimize control flow
       case q"if ($cond) ${lhs: Tree} else ${rhs: Tree}" =>
         q"if ($cond) ${aux(lhs)} else ${aux(rhs)}"
-      case q"levsha.dsl.`package`.when[$_, $_]($cond)($tree)($ev)" =>
+      case q"levsha.dsl.`package`.when[$_]($cond)($tree)" =>
         q"if ($cond) ${aux(tree)}"
       case q"$expr match { case ..$cases }" =>
         val optimizedCases = cases map {
