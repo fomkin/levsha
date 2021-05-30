@@ -25,9 +25,9 @@ private[dsl] object DslOptimizerUtils {
   final val unableToSortTagWarning = "Unable to sort tag content in compile time. Ensure you add styles and attributes first."
 
   def logUnableToOptimize(file: String, 
-                        line: Int,
-                        col: Int,
-                        code: Option[String]): Unit =
+                          line: Int,
+                          col: Int,
+                          code: => Option[String]): Unit =
     logUnableToOptimizePath.foreach { path =>
       val uCode = code
         .map(_.replace("\n", ";"))
