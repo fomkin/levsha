@@ -56,7 +56,7 @@ object DslOptimizerMacro:
       val pos = term.pos
       logUnableToOptimize(
         pos.sourceFile.toString, pos.startLine + 1, 
-        pos.startColumn + 1, pos.sourceCode
+        pos.startColumn + 1, util.Try(pos.sourceCode).getOrElse(None)
       )
 
     def optimizeNode(rc: Expr[RenderContext[T]], tagDef: Expr[TagDef], children: Seq[Expr[Document[T]]]) =
