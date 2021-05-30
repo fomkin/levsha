@@ -70,18 +70,14 @@ object Document {
       val underlying: Ordering[Int] = implicitly[Ordering[Int]]
 
       private def kindToInt(kind: Kind) = kind match {
-        case Style => 0
-        case Attr => 1
-        case Node => 2
-        case Empty => -1
+        case Empty => -3
+        case Style => -3
+        case Attr => -2
+        case Node => -1
       }
 
-      def compare(x: Kind, y: Kind): Int = {
-        if (x == Empty || y == Empty) 0
-        else {
-          underlying.compare(kindToInt(x), kindToInt(y))
-        }
-      }
+      def compare(x: Kind, y: Kind): Int =
+        underlying.compare(kindToInt(x), kindToInt(y))
     }
   }
 }

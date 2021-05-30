@@ -96,8 +96,8 @@ package object dsl extends Optimize {
     * )
     * }}}
     */
-  def when[T, D >: Document[T]](condition: Boolean)(doc: D)(implicit ev: Document[T] =:= D): D =
-    if (condition) doc else ev(Empty)
+  def when[T](condition: Boolean)(doc: Document[T]): Document[T] =
+    if (condition) doc else Empty
 
   /**
     * Use it when want overwrite default click behavior.
@@ -123,6 +123,10 @@ package object dsl extends Optimize {
   implicit def seqToAttr[M](xs: Iterable[Attr[M]]): Attr[M] =
     Attr(rc => xs.foreach(f => f(rc)))
 
+  /** Converts iterable of attributes to document one style */
+  implicit def seqToStyle[M](xs: Iterable[Style[M]]): Style[M] =
+    Style(rc => xs.foreach(f => f(rc)))
+
   /** Converts iterable of templates to document fragment */
   implicit def seqToNode[M](xs: Iterable[Node[M]]): Node[M] =
     Node(rc => xs.foreach(f => f(rc))) // Apply render context to elements
@@ -134,6 +138,10 @@ package object dsl extends Optimize {
   /** Implicitly unwraps optional attributes */
   implicit def optionToAttr[M](value: Option[Attr[M]]): Attr[M] =
     Attr(rc => if (value.nonEmpty) value.get(rc))
+
+  /** Implicitly unwraps optional styles */
+  implicit def optionToStyle[M](value: Option[Style[M]]): Style[M] =
+    Style(rc => if (value.nonEmpty) value.get(rc))
 
   /** Implicitly unwraps optional documents */
   implicit def optionToNode[M](value: Option[Node[M]]): Node[M] =
