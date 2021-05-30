@@ -9,7 +9,7 @@ You can use Levsha as a static HTML renderer.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %% "levsha-core" % "1.0.0"
+libraryDependencies += "com.github.fomkin" %% "levsha-core" % "1.0.1"
 ```
 
 ```scala
@@ -82,7 +82,7 @@ Levsha's memory usage is constant.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "1.0.0"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "1.0.1"
 ```
 
 ```scala
@@ -256,6 +256,7 @@ Node { renderContext =>
   renderContext.closeNode("div")
 }
 ```
+
 ## Optimizer options
 
 You can pass this options to SBT.
