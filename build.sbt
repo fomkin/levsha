@@ -39,7 +39,7 @@ def additionalUnmanagedSources(cfg: Configuration) = Def.setting {
 }
 
 val crossVersionSettings = Seq(
-  crossScalaVersions := Seq("2.13.6", "2.12.11", "3.0.0"),
+  crossScalaVersions := Seq("2.13.6", "2.12.11", "3.0.1"),
   scalaVersion := "3.0.1"
 )
 

@@ -31,6 +31,8 @@ Structures
 
 node {
   byte OPEN
+  int sum
+  int end
   int tag_hash_code
   int xmlns_hash_code
   attr attr_list[]
@@ -63,6 +65,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     throw new IllegalArgumentException("initialBufferSize should be power of two")
 
   private val idb = IdBuilder()
+  private val hashStack = new HashBuilder()
   private var attrsOpened = false
 
   private var buffer: ByteBuffer = _
@@ -102,6 +105,9 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     idb.incLevel()
     requestResize(OpOpenSize)
     lhs.put(OpOpen.toByte)
+    hashStack.open(lhs)
+    lhs.putInt(0) // sum
+    lhs.putInt(0) // end
     lhs.putInt(idents.add(name))
     lhs.putInt(idents.add(xmlns.uri))
   }
@@ -111,6 +117,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     idb.decLevel()
     requestResize(OpSize)
     lhs.put(OpClose.toByte)
+    hashStack.close(lhs)
   }
 
   def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {
@@ -140,9 +147,11 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     closeAttrs()
     idb.incId()
     requestResize(OpTextSize + bytes.length * 2)
+    val p = lhs.position()
     lhs.put(OpText.toByte)
     lhs.putInt(bytes.length)
     lhs.put(bytes)
+    hashStack.hashText(lhs, p)
   }
 
   def addMisc(misc: M): Unit = {
@@ -195,19 +204,28 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       val opB = op(rhs)
       if (opA == OpOpen && opB == OpOpen) {
         idb.incId()
-        val tagA = readTag(lhs)
-        val xmlNsA = readXmlNs(lhs)
-        val tagB = readTag(rhs)
-        val xmlNsB = readXmlNs(rhs)
-        if (tagA != tagB || xmlNsA != xmlNsB) {
-          performer.create(idb.mkId, idents(xmlNsA), idents(tagA))
-          skipLoop(rhs)
-          idb.incLevel()
-          createLoop(lhs, performer)
-          idb.decLevel()
+        val sumA = readSum(lhs)
+        val endA = readEnd(lhs)
+        val sumB = readSum(rhs)
+        val endB = readEnd(rhs)
+        if (sumA != sumB) {
+          val tagA = readTag(lhs)
+          val xmlNsA = readXmlNs(lhs)
+          val tagB = readTag(rhs)
+          val xmlNsB = readXmlNs(rhs)
+          if (tagA != tagB || xmlNsA != xmlNsB) {
+            performer.create(idb.mkId, idents(xmlNsA), idents(tagA))
+            skipLoop(rhs)
+            idb.incLevel()
+            createLoop(lhs, performer)
+            idb.decLevel()
+          } else {
+            compareAttrs(performer)
+            idb.incLevel()
+          }
         } else {
-          compareAttrs(performer)
-          idb.incLevel()
+          lhs.position(endA)
+          rhs.position(endB)
         }
       } else if (opA == OpText && opB == OpText) {
         idb.incId()
@@ -221,12 +239,16 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         }
       } else if (opA == OpText && opB == OpOpen) {
         val aText = readText(lhs)
+        readSum(rhs) // skip tag b
+        readEnd(rhs) // skip tab b
         readTag(rhs) // skip tag b
         readXmlNs(rhs) // skip tag b
         idb.incId()
         performer.createText(idb.mkId, aText)
         skipLoop(rhs)
       } else if (opA == OpOpen && opB == OpText) {
+        val sumA = readSum(lhs)
+        val endA = readEnd(lhs)
         val tagA = readTag(lhs)
         val xmlNsA = readXmlNs(lhs)
         idb.incId()
@@ -270,6 +292,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
   private def closeAttrs(): Unit = {
     if (attrsOpened) {
+      hashStack.hashAttrs(lhs)
       attrsOpened = false
       requestResize(OpSize)
       lhs.put(OpLastAttr.toByte)
@@ -280,6 +303,12 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     if (x.hasRemaining) x.get()
     else OpEnd.toByte
   }
+
+  private def readSum(x: ByteBuffer): Int =
+    x.getInt()
+
+  private def readEnd(x: ByteBuffer): Int =
+    x.getInt()
 
   private def readTag(x: ByteBuffer): Int = {
     x.getInt()
@@ -365,8 +394,10 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         case OpLastAttr => // do nothing
         case OpText => skipText(x)
         case OpOpen =>
-          x.getInt() // skip tag
-          x.getInt() // skip xmlns
+          readSum(x)
+          readEnd(x)
+          readTag(x)
+          readXmlNs(x)
           idb.incLevel()
       }
     }
@@ -393,6 +424,8 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
           performer.createText(idb.mkId, readText(x))
         case OpOpen =>
           idb.incId()
+          readSum(x)
+          readEnd(x)
           val tagA = readTag(x)
           val xmlNsA = readXmlNs(x)
           performer.create(idb.mkId, idents(xmlNsA), idents(tagA))
@@ -407,8 +440,10 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     while (continue) {
       (op(x): @switch) match {
         case OpOpen =>
-          readTag(x)
-          readXmlNs(x)
+          readSum(x) // skip sum
+          readEnd(x) // skip end
+          readTag(x) // skip tag
+          readXmlNs(x) // skip ns
           idb.incId()
           performer.remove(idb.mkId)
           skipLoop(x)
@@ -547,6 +582,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       rhs.position(startPosB)
       false
     } else {
+      // TODO use hash
       var i = 0
       var equals = true
       while (equals && i < aLen) {

@@ -3,8 +3,8 @@ package levsha.impl
 import java.nio.{ByteBuffer}
 import scala.util.hashing.MurmurHash3
 
-class HashBuilder(val posStack: Stack = new Stack(),
-                  var lastOpenPos: Int = 0) {
+class HashBuilder(private val posStack: Stack = new Stack(),
+                  private var lastOpenPos: Int = 0) {
 
   def open(target: ByteBuffer): Unit = {
     val pos = target.position()
@@ -58,7 +58,7 @@ class HashBuilder(val posStack: Stack = new Stack(),
   }
 }
 
-private class Stack(val array: Array[Int] = new Array(256),
+private[impl] class Stack(val array: Array[Int] = new Array(256),
                     var i: Int = 0) {
   def push(v: Int): Unit = {
     array(i) = v
