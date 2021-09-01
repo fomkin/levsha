@@ -39,6 +39,9 @@ package object dom {
     val renderContext = DiffRenderContext[Misc](onMisc = Function.untupled(miscBuffer.+=(_)))
     val registeredNativeEvents = mutable.Set.empty[String]
     val nativeEventHandler = { (nativeEvent: browser.Event) =>
+      if (nativeEvent.`type` == "submit") {
+        nativeEvent.preventDefault()
+      }
       nativeEvent.target.asInstanceOf[js.Dynamic].vid.asInstanceOf[Any] match {
         case () | null => // do nothing
         case vid: String =>
@@ -71,9 +74,6 @@ package object dom {
 
   def render(target: Element)(node: Document.Node[Misc]): Unit = {
     val root = roots.getOrElseUpdate(target, new Root(target))
-    node(root.renderContext)
-    root.saveEvents()
-    root.renderContext.diff(root.performer)
     root.renderContext.swap()
   }
 

@@ -50,7 +50,7 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
     browserDom.document.createTextNode(text)
   }
 
-  def create(id: Id, tag: String, xmlNs: String): Unit = create(id) {
+  def create(id: Id, xmlNs: String, tag: String): Unit = create(id) {
     browserDom.document.createElementNS(xmlNs, tag)
   }
 
