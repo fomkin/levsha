@@ -55,7 +55,7 @@ object DslOptimizerMacro:
     def logUnableToOptimizeTerm(term: Term): Unit =
       val pos = term.pos
       logUnableToOptimize(
-        pos.sourceFile.toString, pos.startLine + 1, 
+        pos.sourceFile.toString, pos.startLine + 1,
         pos.startColumn + 1, util.Try(pos.sourceCode).getOrElse(None)
       )
 
@@ -86,7 +86,7 @@ object DslOptimizerMacro:
           optimizeNode(rc, tagDef, children)
         else
           logUnableToOptimizeTerm(targetExpr.asTerm)
-          '{$targetExpr.apply($rc)}          
+          '{$targetExpr.apply($rc)}
       // Optimize attributes and styles
       case '{(${styleDef}: StyleDef).@=[T]($styleValue)} =>
         '{$rc.setStyle($styleDef.name, $styleValue)}
@@ -153,20 +153,26 @@ object DslOptimizerMacro:
         def trasformBlock(statements: List[Statement], expr: Term): Term =
           val uExpr = aux(rc, expr.asExprOf[Document[T]])
           Block(statements, uExpr.asTerm)
+        def trnasfromCases(cases: List[CaseDef]): List[CaseDef] =
+          cases.map {
+            case CaseDef(pat, guard, body) =>
+              val uBody = aux(rc, body.asExprOf[Document[T]])
+              CaseDef(pat, guard, uBody.asTerm)
+          }
+
         targetExpr.asTerm match {
           case Inlined(_, _, Block(statements, expr)) => trasformBlock(statements, expr).asExpr
+          case Inlined(_, _, tree @ Match(selector, cases)) =>
+            Match
+              .copy(tree)(selector, trnasfromCases(cases))
+              .asExpr
           case Block(statements, expr) => trasformBlock(statements, expr).asExpr
           case tree @ Match(selector, cases) =>
-            val cs = cases.map {
-              case CaseDef(pat, guard, body) =>
-                val uBody = aux(rc, body.asExprOf[Document[T]])
-                CaseDef(pat, guard, uBody.asTerm)
-            }
             Match
-              .copy(tree)(selector, cs)
-              .asExpr
+            .copy (tree) (selector, trnasfromCases (cases) )
+            .asExpr
           // Unable to optimize
-          case term => 
+          case term =>
             // DEBUG
             // report.info(term.show)
             // ---
@@ -174,7 +180,7 @@ object DslOptimizerMacro:
             '{$targetExpr.apply($rc)}
         }
     }
-    
+
     val optimized = '{
       levsha.Document.Node[T]{ rc =>
         ${aux('{rc}, node)}
@@ -184,6 +190,6 @@ object DslOptimizerMacro:
     // DEBUG
     //report.info(optimized.show)
     // ---
-    optimized 
+    optimized
 
 end DslOptimizerMacro
