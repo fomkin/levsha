@@ -32,20 +32,21 @@ final class Id(private val array: Array[Short]) { lhs =>
 
   def mkString: String = mkString('_')
 
-  def mkString(sep: Char): String = if (array.length == 0) {
-    ""
-  } else {
-    val sb = new StringBuilder()
-    var i = 0
-    var continue = true
-    while (continue) {
-      sb.append(array(i))
-      i += 1
-      if (i >= array.length) continue = false
-      else sb.append(sep)
+  def mkString(sep: Char): String =
+    if (array.length == 0) {
+      ""
+    } else {
+      val sb = new StringBuilder()
+      var i = 0
+      var continue = true
+      while (continue) {
+        sb.append(array(i))
+        i += 1
+        if (i >= array.length) continue = false
+        else sb.append(sep)
+      }
+      sb.result()
     }
-    sb.mkString
-  }
 
   def toList: List[Short] = array.toList
 
@@ -53,7 +54,7 @@ final class Id(private val array: Array[Short]) { lhs =>
 
   override def equals(obj: Any): Boolean = obj match {
     case rhs: Id => util.Arrays.equals(lhs.array, rhs.array)
-    case _ => false
+    case _       => false
   }
 
   override lazy val hashCode: Int = util.Arrays.hashCode(array)

@@ -19,14 +19,16 @@ package levsha.impl
 import levsha.{RenderContext, XmlNs}
 import levsha.impl.internal.Op._
 
+import scala.annotation.switch
+import scala.collection.mutable
+
 /**
   * Generates XHTML output.
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
-  extends RenderContext[MiscType] {
+class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig) extends RenderContext[MiscType] {
 
-  val builder: StringBuilder = new StringBuilder()
+  val builder: mutable.StringBuilder = new mutable.StringBuilder()
 
   private[impl] var lastOp: Int = OpClose
   private[impl] var indentation: Int = 0
@@ -88,7 +90,7 @@ class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
     builder.append(name)
     builder.append('=')
     builder.append('"')
-    builder.append(value)
+    builder.append(xmlEscape(value))
     builder.append('"')
     lastOp = OpAttr
   }
@@ -104,10 +106,25 @@ class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
     lastOp = OpStyle
   }
 
+  private def xmlEscape(s: String) = {
+    val possibleSize = (1.1 * s.length).toInt
+    val sb = new mutable.StringBuilder(possibleSize)
+    s.foreach { c =>
+      (c: @switch) match {
+        case '<' => sb.append("&lt;")
+        case '>' => sb.append("&gt;")
+        case '"' => sb.append("&quot;")
+        case '&' => sb.append("&amp;")
+        case _   => sb.append(c)
+      }
+    }
+    sb.result()
+  }
+
   def addTextNode(text: String): Unit = {
     beforeOpenNode()
     addIndentation()
-    builder.append(text)
+    builder.append(xmlEscape(text))
     builder.append(prettyPrinting.lineBreak)
     lastOp = OpText
   }
@@ -115,5 +132,5 @@ class XhtmlRenderContext[MiscType](prettyPrinting: TextPrettyPrintingConfig)
   def addMisc(misc: MiscType): Unit = {}
 
   /** Creates string from buffer */
-  def mkString: String = builder.mkString
+  def mkString: String = builder.result()
 }

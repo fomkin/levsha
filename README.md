@@ -9,7 +9,7 @@ You can use Levsha as a static HTML renderer.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %% "levsha-core" % "1.0.1"
+libraryDependencies += "com.github.fomkin" %% "levsha-core" % "1.2.0"
 ```
 
 ```scala
@@ -82,7 +82,7 @@ Levsha's memory usage is constant.
 
 ```scala
 // build.sbt
-libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "1.0.1"
+libraryDependencies += "com.github.fomkin" %%% "levsha-dom" % "1.2.0"
 ```
 
 ```scala

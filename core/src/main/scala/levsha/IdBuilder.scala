@@ -84,7 +84,7 @@ final class IdBuilder(maxLevel: Int) {
       if (buffer.hasRemaining)
         builder.append(sep)
     }
-    builder.mkString
+    builder.result()
   }
 
   def mkString: String = mkString('_')
@@ -93,8 +93,7 @@ final class IdBuilder(maxLevel: Int) {
 
   def reset(): Unit = {
     buffer.clear()
-    while (buffer.hasRemaining)
-      buffer.put(0.toShort)
+    while (buffer.hasRemaining) buffer.put(0.toShort)
     level = 1
     buffer.rewind()
     buffer.limit(level)
