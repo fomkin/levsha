@@ -5,7 +5,7 @@ val unusedRepo = Some(Resolver.file("Unused transient repository", file("target/
 
 val publishSettings = Seq(
   publishTo := sonatypePublishTo.value,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   publishMavenStyle := true,
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(HeaderLicense.ALv2("2017-2020", "Aleksey Fomkin")),
