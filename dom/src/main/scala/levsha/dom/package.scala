@@ -74,6 +74,9 @@ package object dom {
 
   def render(target: Element)(node: Document.Node[Misc]): Unit = {
     val root = roots.getOrElseUpdate(target, new Root(target))
+    node(root.renderContext)
+    root.saveEvents()
+    root.renderContext.diff(root.performer)
     root.renderContext.swap()
   }
 
