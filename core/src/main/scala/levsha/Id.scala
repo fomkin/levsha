@@ -16,9 +16,20 @@
 
 package levsha
 
+import scala.collection.mutable
 import java.util
 
-final class Id(private val array: Array[Short]) { lhs =>
+trait FastId {
+  def mkId: Id
+  def mkStringParent(sb: mutable.StringBuilder): Unit
+  def mkStringParent(sb: mutable.StringBuilder, sep: Char): Unit
+  def mkString(sb: mutable.StringBuilder): Unit
+  def mkString(sb: mutable.StringBuilder, sep: Char): Unit
+}
+
+final class Id(private val array: Array[Short]) extends FastId { lhs =>
+
+  import Id.DefaultSeparator
 
   def level: Int = array.length
 
@@ -30,23 +41,44 @@ final class Id(private val array: Array[Short]) { lhs =>
     new Id(na)
   }
 
-  def mkString: String = mkString('_')
+  def mkString: String = mkString(DefaultSeparator)
 
   def mkString(sep: Char): String =
     if (array.length == 0) {
       ""
     } else {
-      val sb = new StringBuilder()
-      var i = 0
-      var continue = true
-      while (continue) {
-        sb.append(array(i))
-        i += 1
-        if (i >= array.length) continue = false
-        else sb.append(sep)
-      }
+      val sb = new mutable.StringBuilder()
+      mkString(sb, sep)
       sb.result()
     }
+
+  def mkString(sb: mutable.StringBuilder): Unit =
+    mkString(sb, DefaultSeparator)
+
+  def mkString(sb: mutable.StringBuilder, sep: Char): Unit = {
+    mkStringLevel(sb, sep, array.length)
+  }
+
+  def mkStringParent(sb: mutable.StringBuilder): Unit = {
+    mkStringLevel(sb, DefaultSeparator, array.length - 1)
+  }
+
+  def mkStringParent(sb: mutable.StringBuilder, sep: Char): Unit = {
+    mkStringLevel(sb, sep, array.length - 1)
+  }
+
+  def mkId: Id = this
+  
+  private def mkStringLevel(sb: mutable.StringBuilder, sep: Char, l: Int): Unit = {
+    var i = 0
+    var continue = true
+    while (continue) {
+      sb.append(array(i))
+      i += 1
+      if (i >= l) continue = false
+      else sb.append(sep)
+    }
+  }
 
   def toList: List[Short] = array.toList
 
@@ -63,10 +95,11 @@ final class Id(private val array: Array[Short]) { lhs =>
 object Id {
 
   final val TopLevel = Id(1.toShort)
+  final val DefaultSeparator = '_'
 
   def apply(xs: Short*): Id =
     new Id(xs.toArray)
 
-  def apply(s: String, sep: Char = '_'): Id =
+  def apply(s: String, sep: Char = DefaultSeparator): Id =
     new Id(s.split(sep).map(_.toShort))
 }

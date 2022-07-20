@@ -17,6 +17,7 @@
 package levsha
 
 import java.nio.ShortBuffer
+import scala.collection.mutable
 
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
@@ -26,7 +27,7 @@ object IdBuilder {
     new IdBuilder(maxLevel)
 }
 
-final class IdBuilder(maxLevel: Int) {
+final class IdBuilder(maxLevel: Int) extends FastId {
 
   private var level = 1
   private val buffer = ShortBuffer.allocate(maxLevel)
@@ -76,18 +77,37 @@ final class IdBuilder(maxLevel: Int) {
     clone
   }
 
+  def mkString: String = mkString(Id.DefaultSeparator)
+
   def mkString(sep: Char): String = {
-    val builder = new StringBuilder()
-    buffer.rewind()
-    while (buffer.hasRemaining) {
-      builder.append(buffer.get())
-      if (buffer.hasRemaining)
-        builder.append(sep)
-    }
-    builder.result()
+    val sb = new mutable.StringBuilder()
+    mkStringLevel(sb, sep, buffer.limit())
+    sb.result()
   }
 
-  def mkString: String = mkString('_')
+  def mkStringParent(sb: mutable.StringBuilder): Unit =
+    mkStringLevel(sb, Id.DefaultSeparator, buffer.limit() - 1)
+
+  def mkStringParent(sb: mutable.StringBuilder, sep: Char): Unit =
+    mkStringLevel(sb, sep, buffer.limit())
+
+  def mkString(sb: mutable.StringBuilder): Unit = {
+    mkStringLevel(sb, Id.DefaultSeparator, buffer.limit())
+  }
+
+  def mkString(sb: mutable.StringBuilder, sep: Char): Unit = {
+    mkStringLevel(sb, sep, buffer.limit())
+  }
+
+  private def mkStringLevel(sb: mutable.StringBuilder, sep: Char, l: Int): Unit = {
+    buffer.rewind()
+    var continue = true
+    while (continue) {
+      sb.append(buffer.get())
+      if (buffer.position() >= l) continue = false
+      else sb.append(sep)
+    }
+  }
 
   def mkId: Id = new Id(mkArray)
 
