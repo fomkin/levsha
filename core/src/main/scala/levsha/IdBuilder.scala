@@ -86,26 +86,30 @@ final class IdBuilder(maxLevel: Int) extends FastId {
   }
 
   def mkStringParent(sb: mutable.StringBuilder): Unit =
-    mkStringLevel(sb, Id.DefaultSeparator, buffer.limit() - 1)
+    mkStringLevel(sb, Id.DefaultSeparator, level - 1)
 
   def mkStringParent(sb: mutable.StringBuilder, sep: Char): Unit =
-    mkStringLevel(sb, sep, buffer.limit())
+    mkStringLevel(sb, sep, level - 1)
 
   def mkString(sb: mutable.StringBuilder): Unit = {
-    mkStringLevel(sb, Id.DefaultSeparator, buffer.limit())
+    mkStringLevel(sb, Id.DefaultSeparator, level)
   }
 
   def mkString(sb: mutable.StringBuilder, sep: Char): Unit = {
-    mkStringLevel(sb, sep, buffer.limit())
+    mkStringLevel(sb, sep, level)
   }
+
+  def hasParent: Boolean = level > 1
 
   private def mkStringLevel(sb: mutable.StringBuilder, sep: Char, l: Int): Unit = {
     buffer.rewind()
     var continue = true
     while (continue) {
       sb.append(buffer.get())
-      if (buffer.position() >= l) continue = false
-      else sb.append(sep)
+      if (buffer.position() >= l) {
+        buffer.position(buffer.limit())
+        continue = false
+      } else sb.append(sep)
     }
   }
 

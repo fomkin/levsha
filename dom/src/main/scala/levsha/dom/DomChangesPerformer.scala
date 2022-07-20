@@ -16,7 +16,7 @@
 
 package levsha.dom
 
-import levsha.{Id, XmlNs}
+import levsha.{FastId, Id, XmlNs}
 import levsha.impl.DiffRenderContext.ChangesPerformer
 import org.scalajs.dom.raw.HTMLElement
 import org.scalajs.dom.{Element, Node}
@@ -29,7 +29,8 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
 
   private val index = mutable.Map[Id, Node](Id.TopLevel -> target)
 
-  private def create(id: Id)(createNewElement: => Node): Unit = {
+  private def create(fastId: FastId)(createNewElement: => Node): Unit = {
+    val id = fastId.mkId
     val parentId = id.parent
     parentId.flatMap(index.get) foreach { parent =>
       val newEl = createNewElement
@@ -46,36 +47,36 @@ final class DomChangesPerformer(target: Element) extends ChangesPerformer {
     }
   }
 
-  def createText(id: Id, text: String): Unit = create(id) {
+  def createText(id: FastId, text: String): Unit = create(id) {
     browserDom.document.createTextNode(text)
   }
 
-  def create(id: Id, xmlNs: String, tag: String): Unit = create(id) {
+  def create(id: FastId, xmlNs: String, tag: String): Unit = create(id) {
     browserDom.document.createElementNS(xmlNs, tag)
   }
 
-  def remove(id: Id): Unit = index.remove(id) foreach { el =>
+  def remove(id: FastId): Unit = index.remove(id.mkId) foreach { el =>
     el.parentNode.removeChild(el)
   }
 
-  def setAttr(id: Id, xmlNs: String, name: String, value: String): Unit = index.get(id) foreach {
+  def setAttr(id: FastId, xmlNs: String, name: String, value: String): Unit = index.get(id.mkId) foreach {
     case node: Element if xmlNs eq XmlNs.html.uri => node.setAttribute(name, value)
     case node: Element => node.setAttributeNS(xmlNs, name, value)
     case node => browserDom.console.warn(s"Can't set attribute to $node")
   }
 
-  def removeAttr(id: Id, xmlNs: String, name: String): Unit = index.get(id) foreach {
+  def removeAttr(id: FastId, xmlNs: String, name: String): Unit = index.get(id.mkId) foreach {
     case node: Element if xmlNs eq XmlNs.html.uri => node.removeAttribute(name)
     case node: Element => node.removeAttributeNS(xmlNs, name)
     case node => browserDom.console.warn(s"Can't remove attribute from $node")
   }
 
-  def setStyle(id: Id, name: String, value: String): Unit = index.get(id) foreach {
+  def setStyle(id: FastId, name: String, value: String): Unit = index.get(id.mkId) foreach {
     case node: HTMLElement => node.style.setProperty(name, value)
     case node => browserDom.console.warn(s"Can't set style to $node")
   }
 
-  def removeStyle(id: Id, name: String): Unit = index.get(id) foreach {
+  def removeStyle(id: FastId, name: String): Unit = index.get(id.mkId) foreach {
     case node: HTMLElement => node.style.removeProperty(name)
     case node => browserDom.console.warn(s"Can't remove style from $node")
   }

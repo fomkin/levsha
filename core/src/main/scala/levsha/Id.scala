@@ -21,6 +21,7 @@ import java.util
 
 trait FastId {
   def mkId: Id
+  def hasParent: Boolean
   def mkStringParent(sb: mutable.StringBuilder): Unit
   def mkStringParent(sb: mutable.StringBuilder, sep: Char): Unit
   def mkString(sb: mutable.StringBuilder): Unit
@@ -68,7 +69,9 @@ final class Id(private val array: Array[Short]) extends FastId { lhs =>
   }
 
   def mkId: Id = this
-  
+
+  def hasParent: Boolean = level > 1
+
   private def mkStringLevel(sb: mutable.StringBuilder, sep: Char, l: Int): Unit = {
     var i = 0
     var continue = true
