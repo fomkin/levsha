@@ -21,10 +21,16 @@ object DiffProperties extends Properties("Diff") {
         val performer = DummyChangesPerformer
         val renderContext = DiffRenderContext[Nothing]()
         a(renderContext)
-        renderContext.diff(DummyChangesPerformer)
+        renderContext.finalizeDocument()
         renderContext.swap()
         b(renderContext)
-        renderContext.diff(performer)
+        renderContext.finalizeDocument()
+        try {
+          renderContext.diff(performer)
+        } catch {
+          case e: Throwable =>
+            e.printStackTrace()
+        }
         true
     }
   }
@@ -34,9 +40,10 @@ object DiffProperties extends Properties("Diff") {
       val performer = new DiffTestChangesPerformer()
       val renderContext = DiffRenderContext[Nothing]()
       trial.originalDocument(renderContext)
-      renderContext.diff(DummyChangesPerformer)
+      renderContext.finalizeDocument()
       renderContext.swap()
       trial.newDocument(renderContext)
+      renderContext.finalizeDocument()
       renderContext.diff(performer)
       val sample = trial.changes.sorted
       val res = performer.result.sorted

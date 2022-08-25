@@ -18,13 +18,13 @@ package levsha.impl
 
 import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
-
 import levsha._
 import levsha.impl.DiffRenderContext._
 import levsha.impl.internal.Op._
 
 import scala.annotation.switch
-import internal.debox.{IntStringMap, StringSet}
+import internal.debox.{IntByteBufferMap, IntStringMap, StringSet}
+import levsha.impl.internal.StringHelper
 
 import scala.util.hashing.MurmurHash3
 
@@ -82,7 +82,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val lhsLimit = savedBuffer.getInt
     val rhsPos = savedBuffer.getInt
     val rhsLimit = savedBuffer.getInt
-    buffer = ByteBuffer.allocateDirect(savedBuffer.capacity() - 16)
+    buffer = ByteBuffer.allocate(savedBuffer.capacity() - 16)
     buffer.put(savedBuffer)
     buffer.clear()
     // Restore lhs and rhs
@@ -106,13 +106,31 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     attrsOpened = true
     idb.incId()
     idb.incLevel()
-    requestResize(OpOpenSize)
+    requestResize(OpOpenSize + name.length * 4)
     lhs.put(OpOpen.toByte)
     hashStack.open(lhs)
-    lhs.putInt(0) // sum
-    lhs.putInt(0) // end
-    lhs.putInt(idents.add(name))
-    lhs.putInt(idents.add(xmlns.uri))
+//    lhs.putInt(0) // sum
+//    lhs.putInt(0) // end
+//    lhs.put(xmlns.code) // code of xmlns
+//    lhs.putInt(name.hashCode) // hash of name
+//    lhs.put((name.length * 2).toByte) // length in chars of name
+//    putToBuffer(lhs, name)
+    val memCacheId = xmlns.hashCode ^ name.hashCode
+    val memCacheLocal = getLocalHeadersCache
+    var memCache = memCacheLocal(memCacheId)
+    if (memCache == null) {
+      val x = ByteBuffer.allocate(32).order(ByteOrder.nativeOrder())
+      x.putInt(0) // sum
+      x.putInt(0) // end
+      x.put(xmlns.code) // code of xmlns
+      x.putInt(name.hashCode) // hash of name
+      StringHelper.putToBuffer(x, name, false)
+      x.flip()
+      memCacheLocal.update(memCacheId, x)
+      memCache = x
+    }
+    lhs.put(memCache)
+    memCache.rewind()
   }
 
   def closeNode(name: String): Unit = {
@@ -123,47 +141,50 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     hashStack.close(lhs)
   }
 
-  def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {
-    val nameHash = idents.add(name)
-    val xmlNsHash = idents.add(xmlNs.uri)
-    val bytes = value.getBytes(StandardCharsets.UTF_8)
-//    var hash = MurmurHash3.mapSeed
-//    hash = MurmurHash3.mix(hash, nameHash)
-//    hash = MurmurHash3.mix(hash, xmlNsHash)
-//    hash = MurmurHash3.mix(hash, MurmurHash3.bytesHash(bytes))
-//    hash = MurmurHash3.finalizeHash(hash, 3)
-    requestResize(OpAttrSize + bytes.length * 2)
-    lhs.put(OpAttr.toByte)
-//    lhs.putInt(hash) // sum
-//    lhs.putInt(lhs.position() + 17 + bytes.length) // end
-    lhs.putInt(nameHash)
-    lhs.putInt(xmlNsHash)
-    lhs.put(0.toByte) // this is not a style
-    lhs.putInt(bytes.length)
-    lhs.put(bytes)
+  private def setAttrOrStyle(xmlNs: Byte, name: String, value: String, isStyle: Byte): Unit = {
+    requestResize(OpAttrSize + (name.length * 2 + value.length * 2) * 2)
+    val memCacheId = xmlNs.hashCode ^ name.hashCode
+    val memCacheLocal = getLocalHeadersCache
+    var memCache = memCacheLocal(memCacheId)
+    if (memCache == null) {
+      val x = ByteBuffer.allocate(64).order(ByteOrder.nativeOrder())
+      x.put(OpAttr.toByte)
+      x.put(xmlNs)
+      x.putInt(MurmurHash3.stringHash(name))
+      StringHelper.putToBuffer(x, name, false)
+      x.put(isStyle) // this is not a style
+      x.flip()
+      memCacheLocal.update(memCacheId, x)
+      memCache = x
+    }
+    lhs.put(memCache)
+    memCache.rewind()
+    lhs.putInt(MurmurHash3.stringHash(value))
+    StringHelper.putToBuffer(lhs, value, true)
+//    lhs.put(OpAttr.toByte)
+//    lhs.put(xmlNs.code)
+//    lhs.putInt(name.hashCode)
+//    lhs.put((name.length * 2).toByte) // length in chars of name
+//    putToBuffer(lhs, name)
+//    lhs.put(0.toByte) // this is not a style
+//    lhs.putInt(bytes.length)
+//    lhs.put(bytes)
   }
 
-  def setStyle(name: String, value: String): Unit = {
-    val bytes = value.getBytes(StandardCharsets.UTF_8)
-    requestResize(OpAttrSize + bytes.length * 2)
-    lhs.put(OpAttr.toByte)
-    lhs.putInt(idents.add(name))
-    lhs.putInt(0) // no uri for style
-    lhs.put(1.toByte) // this is a style
-    lhs.putInt(bytes.length)
-    lhs.put(bytes)
-  }
+  def setAttr(xmlNs: XmlNs, name: String, value: String): Unit =
+    setAttrOrStyle(xmlNs.code, name, value, 0.toByte)
+
+  def setStyle(name: String, value: String): Unit =
+    setAttrOrStyle(0.toByte, name, value, 1.toByte)
 
   def addTextNode(text: String): Unit = {
-    val bytes = text.getBytes(StandardCharsets.UTF_8)
     closeAttrs()
     idb.incId()
-    requestResize(OpTextSize + bytes.length * 2)
+    requestResize(OpTextSize + text.length * 4)
     val p = lhs.position()
     lhs.put(OpText.toByte)
-    lhs.putInt(MurmurHash3.bytesHash(bytes)) // string hash
-    lhs.putInt(bytes.length)
-    lhs.put(bytes)
+    lhs.putInt(MurmurHash3.stringHash(text)) // string hash
+    StringHelper.putToBuffer(lhs, text, true)
     hashStack.hashText(lhs, p)
   }
 
@@ -178,7 +199,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val t = rhs
     rhs = lhs
     lhs = t
-    reset()
   }
 
   /** Cleanup current buffer */
@@ -208,13 +228,16 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     buff
   }
 
-  def diff(performer: ChangesPerformer): Unit = {
+  def finalizeDocument(): Unit = {
     lhs.flip()
     idb.reset()
+  }
+
+  def diff(performer: FastChangesPerformer): Unit = {
 
     while (lhs.hasRemaining()) {
-      val opA = op(lhs)
-      val opB = op(rhs)
+      val opA = getOp(lhs)
+      val opB = getOp(rhs)
       if (opA == OpOpen && opB == OpOpen) {
         idb.incId()
         val sumA = readSum(lhs)
@@ -222,13 +245,19 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         val sumB = readSum(rhs)
         val endB = readEnd(rhs)
         if (sumA != sumB) {
-          val tagA = readTag(lhs)
-          val xmlNsA = readXmlNs(lhs)
-          val tagB = readTag(rhs)
-          val xmlNsB = readXmlNs(rhs)
-          if (tagA != tagB || xmlNsA != xmlNsB) {
-            performer.create(idb, idents(xmlNsA), idents(tagA))
-            skipLoop(rhs)
+          val aXmlNs = lhs.get
+          val aTagHash = lhs.getInt
+          val aTagLength = lhs.get
+          val aTagOffset = lhs.position()
+          lhs.position(aTagOffset + aTagLength)
+          val bXmlNs = rhs.get
+          val bTagHash = rhs.getInt
+          val bTagLength = rhs.get
+          val bTagOffset = rhs.position()
+          rhs.position(bTagOffset + bTagLength)
+          if (aTagHash != bTagHash || aXmlNs != bXmlNs) {
+            performer.create(idb, XmlNs.fromCode(aXmlNs), lhs, aTagOffset, aTagLength)
+            rhs.position(endB)
             idb.incLevel()
             createLoop(lhs, performer)
             idb.decLevel()
@@ -244,29 +273,35 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
         idb.incId()
         if (!compareTexts()) {
           skipText(rhs)
-          val textA = readText(lhs)
-          performer.createText(idb, textA)
+          lhs.getInt // TODO this is may be removed via adding skipTextBody
+          val textLength = lhs.getInt()
+          val textOffset = lhs.position()
+          lhs.position(textOffset + textLength)
+          performer.createText(idb, lhs, textOffset, textLength)
         } else {
           skipText(lhs)
           skipText(rhs)
         }
       } else if (opA == OpText && opB == OpOpen) {
-        val aText = readText(lhs)
-        readSum(rhs) // skip tag b
-        readEnd(rhs) // skip tab b
-        readTag(rhs) // skip tag b
-        readXmlNs(rhs) // skip tag b
+        lhs.getInt
+        val aTextLength = lhs.getInt()
+        val aTextOffset = lhs.position()
+        lhs.position(aTextOffset + aTextLength)
         idb.incId()
-        performer.createText(idb, aText)
-        skipLoop(rhs)
+        performer.createText(idb, lhs, aTextOffset, aTextLength)
+        readSum(rhs)
+        rhs.position(readEnd(rhs))
       } else if (opA == OpOpen && opB == OpText) {
         val sumA = readSum(lhs)
         val endA = readEnd(lhs)
-        val tagA = readTag(lhs)
-        val xmlNsA = readXmlNs(lhs)
+        val aXmlNs = lhs.get
+        val aTagHash = lhs.getInt
+        val aTagLength = lhs.get
+        val aTagOffset = lhs.position()
+        lhs.position(aTagOffset + aTagLength)
         idb.incId()
         skipText(rhs)
-        performer.create(idb, idents(xmlNsA), idents(tagA))
+        performer.create(idb, XmlNs.fromCode(aXmlNs), lhs, aTagOffset, aTagLength)
         idb.incLevel()
         createLoop(lhs, performer)
         idb.decLevel()
@@ -312,7 +347,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     }
   }
 
-  private def op(x: ByteBuffer): Byte = {
+  private def getOp(x: ByteBuffer): Byte = {
     if (x.hasRemaining) x.get()
     else OpEnd.toByte
   }
@@ -322,14 +357,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
   private def readEnd(x: ByteBuffer): Int =
     x.getInt()
-
-  private def readTag(x: ByteBuffer): Int = {
-    x.getInt()
-  }
-
-  private def readXmlNs(x: ByteBuffer): Int = {
-    x.getInt
-  }
 
   private def skipText(x: ByteBuffer): Unit = {
     x.getInt // hash
@@ -341,135 +368,79 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     x.position(x.position() + len)
   }
 
-  private def readString(x: ByteBuffer, len: Int): String = {
-    val bytes = new Array[Byte](len)
-    x.get(bytes)
-    new String(bytes, StandardCharsets.UTF_8)
-  }
-
-  private def readString(x: ByteBuffer): String = {
-    val len = x.getInt()
-    readString(x, len)
-  }
-
-  private def readText(x: ByteBuffer): String = {
-    x.getInt() // hash
-    readString(x)
-  }
-
-  private def skipAttr(x: ByteBuffer): Unit = {
-    x.getInt() // tag name
-    x.getInt() // ns
-    x.get() // is style
-    val len = x.getInt()
-    x.position(x.position() + len)
-  }
-
   private def skipAttrText(x: ByteBuffer): Unit = {
+    x.getInt() // hash
     skipString(x)
   }
 
   /** true is further is attr; false if end of list */
   private def checkAttr(x: ByteBuffer): Boolean = {
-    (op(x): @switch) match {
-      case OpAttr => true
-      case OpLastAttr => false
-      case OpEnd => false
-    }
-  }
-
-  private def readAttrRaw(x: ByteBuffer) = {
-    x.getInt()
+    getOp(x) == OpAttr
   }
 
   private def readIsStyle(x: ByteBuffer) =
-    if (x.get() == 1) true else false
-
-  private def readAttr(x: ByteBuffer) = {
-    idents(x.getInt())
-  }
-
-  private def readAttrXmlNs(x: ByteBuffer) = {
-    x.getInt()
-  }
-
-  private def readAttrText(x: ByteBuffer, len: Int) = {
-    readString(x, len)
-  }
-
-  private def readAttrText(x: ByteBuffer) = {
-    readString(x)
-  }
+    x.get() == 1
 
   private def unOp(x: ByteBuffer) = {
     x.position(x.position() - 1)
   }
 
-  private def skipLoop(x: ByteBuffer): Unit = {
+  private def createLoop(x: ByteBuffer, performer: FastChangesPerformer): Unit = {
     val startLevel = idb.getLevel
     var continue = true
     while (continue) {
-      (op(x): @switch) match {
-        case OpClose =>
-          if (idb.getLevel == startLevel) continue = false
-          else idb.decLevel()
-        case OpAttr => skipAttr(x)
-        case OpLastAttr => // do nothing
-        case OpText => skipText(x)
-        case OpOpen =>
-          readSum(x)
-          readEnd(x)
-          readTag(x)
-          readXmlNs(x)
-          idb.incLevel()
-      }
-    }
-  }
-
-  private def createLoop(x: ByteBuffer, performer: ChangesPerformer): Unit = {
-    val startLevel = idb.getLevel
-    var continue = true
-    while (continue) {
-      (op(x): @switch) match {
+      val op = getOp(x)
+      (op: @switch) match {
         case OpClose | OpEnd =>
           if (idb.getLevel == startLevel) continue = false
           else idb.decLevel()
         case OpAttr =>
           idb.decLevelTmp()
-          val attr = readAttr(x)
-          val xmlNs = readAttrXmlNs(x)
+          val attrXmlNs = x.get
+          val attrNameHash = x.getInt
+          val attrNameLength = x.get
+          val attrNameOffset = x.position()
+          x.position(attrNameOffset + attrNameLength)
           val isStyle = readIsStyle(x)
-          if (isStyle) performer.setStyle(idb, attr, readAttrText(x))
-          else performer.setAttr(idb, idents(xmlNs), attr, readAttrText(x))
+          val attrValueHash = x.getInt()
+          val attrValueLength = x.getInt()
+          val attrValueOffset = x.position()
+          x.position(attrValueOffset + attrValueLength)
+          if (isStyle) performer.setStyle(idb, x, attrNameOffset, attrNameLength, attrValueOffset, attrValueLength)
+          else performer.setAttr(idb, XmlNs.fromCode(attrXmlNs), x, attrNameOffset, attrNameLength, attrValueOffset, attrValueLength)
           idb.incLevel()
         case OpText =>
           idb.incId()
-          performer.createText(idb, readText(x))
+          x.getInt() // hash
+          val textLength = x.getInt()
+          val textOffset = x.position()
+          x.position(textOffset + textLength)
+          performer.createText(idb, x, textOffset, textLength)
         case OpOpen =>
           idb.incId()
           readSum(x)
           readEnd(x)
-          val tagA = readTag(x)
-          val xmlNsA = readXmlNs(x)
-          performer.create(idb, idents(xmlNsA), idents(tagA))
+          val aXmlNs = x.get
+          val aTagHash = x.getInt
+          val aTagLength = x.get
+          val aTagOffset = x.position()
+          x.position(aTagOffset + aTagLength)
+          performer.create(idb, XmlNs.fromCode(aXmlNs), x, aTagOffset, aTagLength)
           idb.incLevel()
         case OpLastAttr => // do nothing
       }
     }
   }
 
-  private def deleteLoop(x: ByteBuffer, performer: ChangesPerformer): Unit = {
+  private def deleteLoop(x: ByteBuffer, performer: FastChangesPerformer): Unit = {
     var continue = true
     while (continue) {
-      (op(x): @switch) match {
+      (getOp(x): @switch) match {
         case OpOpen =>
-          readSum(x) // skip sum
-          readEnd(x) // skip end
-          readTag(x) // skip tag
-          readXmlNs(x) // skip ns
+          readSum(x)
+          x.position(readEnd(x))
           idb.incId()
           performer.remove(idb)
-          skipLoop(x)
         case OpText =>
           skipText(x)
           idb.incId()
@@ -481,7 +452,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
 //  private val attrsDiffMap = IntStringMap.ofSize(diffIdentSetSize)
 
-  private def compareAttrs(performer: ChangesPerformer): Unit = {
+  private def compareAttrs(performer: FastChangesPerformer): Unit = {
     // TODO maybe it make sence to chose algorithm depend attrs length and shape
     val startPosA = lhs.position()
     val startPosB = rhs.position()
@@ -533,64 +504,67 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     // -----
     // Check the attrs were removed
     while (checkAttr(rhs)) {
-      val attrNameB = readAttrRaw(rhs)
-      val attrXmlNsB = readAttrXmlNs(rhs)
+      // Read tag name from rhs
+      val bXmlNs = rhs.get()
+      val bNameHash = rhs.getInt()
+      val bNameLength = rhs.get()
+      val bNameOffset = rhs.position()
+      rhs.position(bNameOffset + bNameLength)
       val isStyleB = readIsStyle(rhs)
       var needToRemove = true
       skipAttrText(rhs)
       lhs.position(startPosA)
       while (needToRemove && checkAttr(lhs)) {
-        val attrNameA = readAttrRaw(lhs)
-        val attrXmlNsA = readAttrXmlNs(lhs)
+        val aXmlNs = lhs.get()
+        val aNameHash = lhs.getInt()
+        val aNameLength = lhs.get()
+        val aNameOffset = lhs.position()
+        lhs.position(aNameOffset + aNameLength)
         val isStyleA = readIsStyle(lhs)
         skipAttrText(lhs)
-        if (attrNameA == attrNameB && attrXmlNsA == attrXmlNsB && isStyleA == isStyleB)
+        if (aNameHash == bNameHash && aXmlNs == bXmlNs && isStyleA == isStyleB)
           needToRemove = false
       }
       if (needToRemove) {
-        if (isStyleB) performer.removeStyle(idb, idents(attrNameB))
-        else performer.removeAttr(idb, idents(attrXmlNsB), idents(attrNameB))
+        if (isStyleB) performer.removeStyle(idb, rhs, bNameOffset, bNameLength)
+        else performer.removeAttr(idb, XmlNs.fromCode(bXmlNs), rhs, bNameOffset, bNameLength)
       }
     }
     // Check the attrs were added
     val endPosB = rhs.position()
     lhs.position(startPosA)
     while (checkAttr(lhs)) {
-      val nameA = readAttrRaw(lhs)
-      val xmlNsA = readAttrXmlNs(lhs)
+      val aXmlNs = lhs.get()
+      val aNameHash = lhs.getInt()
+      val aNameLength = lhs.get()
+      val aNameOffset = lhs.position()
+      lhs.position(aNameOffset + aNameLength)
       val isStyleA = readIsStyle(lhs)
-      val valueLenA = lhs.getInt()
-      val valuePosA = lhs.position()
+      val aValueHash = lhs.getInt()
+      val aValueLength = lhs.getInt()
+      val aValueOffset = lhs.position()
       var needToSet = true
       rhs.position(startPosB)
       while (needToSet && checkAttr(rhs)) {
-        val nameB = readAttrRaw(rhs)
-        val xmlNsB = readAttrXmlNs(rhs)
+        val bXmlNs = rhs.get()
+        val bNameHash = rhs.getInt()
+        val bNameLength = rhs.get()
+        val bNameOffset = rhs.position()
+        rhs.position(bNameOffset + bNameLength)
         val isStyleB = readIsStyle(rhs)
+        val bValueHash = rhs.getInt()
         val valueLenB = rhs.getInt()
         val valuePosB = rhs.position()
         // First condition: name of attributes should be equals
-        if (nameA == nameB && xmlNsA == xmlNsB && isStyleA == isStyleB) {
-          if (valueLenA == valueLenB) {
-            var i = 0
-            var eq = true
-            lhs.position(valuePosA)
-            while (eq && i < valueLenA) {
-              if (lhs.get() != rhs.get()) eq = false
-              i += 1
-            }
-            if (eq) needToSet = false
-          }
-        }
+        needToSet = aNameHash != bNameHash || aXmlNs != bXmlNs || isStyleA != isStyleB || aValueHash != bValueHash
         rhs.position(valuePosB + valueLenB)
       }
       if (needToSet) {
-        lhs.position(valuePosA)
-        val valueA = readAttrText(lhs, valueLenA)
-        if (isStyleA) performer.setStyle(idb, idents(nameA), valueA)
-        else performer.setAttr(idb, idents(xmlNsA), idents(nameA), valueA)
+        lhs.position(aValueOffset + aValueLength)
+        if (isStyleA) performer.setStyle(idb, lhs, aNameOffset, aNameLength, aValueOffset, aValueLength)
+        else performer.setAttr(idb, XmlNs.fromCode(aXmlNs), lhs, aNameOffset, aNameLength, aValueOffset, aValueLength)
       } else {
-        lhs.position(valuePosA + valueLenA)
+        lhs.position(aValueOffset + aValueLength)
       }
     }
     rhs.position(endPosB)
@@ -630,7 +604,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       }
     }
 
-    buffer = ByteBuffer.allocateDirect(newSize)
+    buffer = ByteBuffer.allocate(newSize)
     buffer.order(ByteOrder.nativeOrder())
 
     lhs = {
@@ -659,10 +633,15 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 
 object DiffRenderContext {
 
-//  private[impl] val idents = IntStringMap.ofSize(100)
-  private[impl] val diffIdentSetSize = sys.env.getOrElse("LEVSHA_DIFF_IDENT_SET", "1024").toInt
-//  private[impl] lazy val diffAttrMapSize = sys.env.getOrElse("LEVSHA_DIFF_ATTRS_MAP", "64").toInt
-  private[impl] val idents = StringSet.ofAllocatedSize(diffIdentSetSize)
+  private val headersCache = new ThreadLocal[IntByteBufferMap]()
+  private def getLocalHeadersCache = {
+    var result = headersCache.get()
+    if (result == null) {
+      result = IntByteBufferMap.ofSize(2048)
+      headersCache.set(result)
+    }
+    result
+  }
 
   final val DefaultDiffRenderContextBufferSize = 1024 * 64
 
@@ -674,14 +653,47 @@ object DiffRenderContext {
     new DiffRenderContext[MiscType](onMisc, initialBufferSize, savedBuffer.orNull)
   }
 
-  trait ChangesPerformer {
+  trait FastChangesPerformer {
+    def remove(id: FastId): Unit
+    def create(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit
+    def createText(id: FastId, source: ByteBuffer, offset: Int, length: Int): Unit
+    def removeAttr(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit
+    def removeStyle(id: FastId, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit
+    def setAttr(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int, valueOffset: Int, valueLength: Int): Unit
+    def setStyle(id: FastId, source: ByteBuffer, nameOffset: Int, nameLength: Int, valueOffset: Int, valueLength: Int): Unit
+  }
+
+  trait ChangesPerformer extends FastChangesPerformer {
     def removeAttr(id: FastId, xmlNs: String, name: String): Unit
     def removeStyle(id: FastId, name: String): Unit
-    def remove(id: FastId): Unit
     def setAttr(id: FastId, xmlNs: String, name: String, value: String): Unit
     def setStyle(id: FastId, name: String, value: String): Unit
     def createText(id: FastId, text: String): Unit
     def create(id: FastId, xmlNs: String, tag: String): Unit
+
+    // Fast impl
+
+    private def stringFromSource(source: ByteBuffer, offset: Int, length: Int) = {
+      val sb = new scala.collection.mutable.StringBuilder()
+      StringHelper.appendFromSource(source, sb, offset, length)
+      sb.result()
+    }
+
+    def create(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit =
+      create(id, xmlNs.uri, stringFromSource(source, nameOffset, nameLength))
+    def removeAttr(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit =
+      removeAttr(id, xmlNs.uri, stringFromSource(source, nameOffset, nameLength))
+    def removeStyle(id: FastId, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit =
+      removeStyle(id, stringFromSource(source, nameOffset, nameLength))
+    def setAttr(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int, valueOffset: Int, valueLength: Int): Unit = {
+      val name = stringFromSource(source, nameOffset, nameLength)
+      val value = stringFromSource(source, valueOffset, valueLength)
+      setAttr(id, xmlNs.uri, name, value)
+    }
+    def setStyle(id: FastId, source: ByteBuffer, nameOffset: Int, nameLength: Int, valueOffset: Int, valueLength: Int): Unit =
+      setStyle(id, stringFromSource(source, nameOffset, nameLength), stringFromSource(source, valueOffset, valueLength))
+    def createText(id: FastId, source: ByteBuffer, offset: Int, length: Int): Unit =
+      createText(id, stringFromSource(source, offset, length))
   }
 
   object DummyChangesPerformer extends ChangesPerformer {
@@ -692,6 +704,38 @@ object DiffRenderContext {
     def setStyle(id: FastId, name: String, value: String): Unit = ()
     def createText(id: FastId, text: String): Unit = ()
     def create(id: FastId, tag: String, xmlNs: String): Unit = ()
+    // Fast API
+    override def create(id: FastId,
+                        xmlNs: XmlNs,
+                        source: ByteBuffer,
+                        nameOffset: Int,
+                        nameLength: Int): Unit = ()
+    override def removeAttr(id: FastId,
+                            xmlNs: XmlNs,
+                            source: ByteBuffer,
+                            nameOffset: Int,
+                            nameLength: Int): Unit = ()
+    override def removeStyle(id: FastId,
+                             source: ByteBuffer,
+                             nameOffset: Int,
+                             nameLength: Int): Unit = ()
+    override def setAttr(id: FastId,
+                         xmlNs: XmlNs,
+                         source: ByteBuffer,
+                         nameOffset: Int,
+                         nameLength: Int,
+                         valueOffset: Int,
+                         valueLength: Int): Unit = ()
+    override def setStyle(id: FastId,
+                          source: ByteBuffer,
+                          nameOffset: Int,
+                          nameLength: Int,
+                          valueOffset: Int,
+                          valueLength: Int): Unit = ()
+    override def createText(id: FastId,
+                            source: ByteBuffer,
+                            offset: Int,
+                            length: Int): Unit = ()
   }
 
   type MiscCallback[MiscType] = (Id, MiscType) => _

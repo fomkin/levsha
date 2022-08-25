@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-object DiffRenderContextTest extends utest.TestSuite {
+  object DiffRenderContextTest extends utest.TestSuite {
   
   import utest.{TestableString, TestableSymbol => _, assert}
   import Change._
@@ -32,14 +32,19 @@ object DiffRenderContextTest extends utest.TestSuite {
       )
     }
 
+    /*
+changes:  List(setAttr(List(1, 1),class,http://www.w3.org/1999/xhtml,война), create(List(1, 4),div,http://www.w3.org/1999/xhtml), setAttr(List(1, 4),lang,http://www.w3.org/1999/xhtml,ru), create(List(1, 6),span,http://www.w3.org/1999/xhtml))
+expected: List(setAttr(List(1, 1),class,война,http://www.w3.org/1999/xhtml), create(List(1, 4),div,http://www.w3.org/1999/xhtml), setAttr(List(1, 4),lang,http://www.w3.org/1999/xhtml,ru), create(List(1, 6),span,http://www.w3.org/1999/xhtml))
+
+    */
     "should text to node with chidlren" - {
       val changes = runDiff(
         original = {
           div(clazz := "world",
-            input(clazz := "world",lang := "ru",
+            input(clazz := "мир",lang := "ru",
               "j"
             ),
-            p(clazz := "world",lang := "ru"),
+            p(clazz := "мир",lang := "ru"),
             "I",
             "j",
             "b",
@@ -53,10 +58,10 @@ object DiffRenderContextTest extends utest.TestSuite {
         },
         updated = {
           div(clazz := "world",
-            input(clazz := "world",lang := "ru",
+            input(clazz := "война",lang := "ru",
               "j"
             ),
-            p(clazz := "world",lang := "ru"),
+            p(clazz := "мир",lang := "ru"),
             "I",
             div(lang := "ru"),
             "b",
@@ -69,21 +74,17 @@ object DiffRenderContextTest extends utest.TestSuite {
           )
         }
       )
-      assert {
-        changes == Seq(
-          create("1_4","div", XmlNs.html.uri),
-          setAttr("1_4","lang", XmlNs.html.uri, "ru"),
-          create("1_6","span", XmlNs.html.uri)
-        )
-      }
+      val expected = Seq(setAttr("1_1","class",XmlNs.html.uri,"война"), create("1_4","div", XmlNs.html.uri), setAttr("1_4","lang", XmlNs.html.uri, "ru"), create("1_6","span", XmlNs.html.uri))
+      assert(changes == expected)
     }
 
     "should remove attribute" - {
       val changes = runDiff(
-        original = { span(clazz := "world",style := "margin: 10;", "q") },
+        original = { span(style := "margin: 10;", clazz := "world", "q") },
         updated = { span(style := "margin: 10;", "q") }
       )
-      assert(changes == Seq(removeAttr("1", XmlNs.html.uri, "class")))
+      val expected = Seq(removeAttr("1", XmlNs.html.uri, "class"))
+      assert(changes == expected)
     }
     
     "should remove only subroot, not entire tree" - {
@@ -121,17 +122,31 @@ object DiffRenderContextTest extends utest.TestSuite {
       }
     }
 
+    "should replace node with another one" - {
+      val changes = runDiff(
+        original = div(span(div(), div(), div())),
+        updated = div(div())
+      )
+      assert(
+        changes == Seq(
+          create("1_1", "div", XmlNs.html.uri)
+        )
+      )
+    }
+
     "should save and restore state" - {
       val original = span(clazz := "world",style := "margin: 10;", "q")
       val updated = span(style := "margin: 10;", "q")
       val performer = new DiffTestChangesPerformer()
       val renderContext1 = DiffRenderContext[Nothing]()
       original(renderContext1)
-      renderContext1.diff(DummyChangesPerformer)
+      renderContext1.finalizeDocument()
       renderContext1.swap()
+      renderContext1.reset()
       val buffer = renderContext1.save()
       val renderContext2 = DiffRenderContext[Nothing](savedBuffer = Some(buffer))
       updated(renderContext2)
+      renderContext2.finalizeDocument()
       renderContext2.diff(performer)
       val changes = performer.result
       assert(changes == Seq(removeAttr("1", XmlNs.html.uri, "class")))
@@ -155,31 +170,6 @@ object DiffRenderContextTest extends utest.TestSuite {
         )
       }
     }
-
-//    "should consider two identical attributes with different xmlNs as different one" - {
-//      val changes = runDiff(
-//        original = {
-//          div(
-//            a := "value",
-//            b := "value"
-//          )
-//        },
-//        updated = {
-//          div(
-//            ns.mathml('a) /= "value",
-//            ns.svg('b) /= "value"
-//          )
-//        }
-//      )
-//      assert {
-//        changes == Seq(
-//          removeAttr(List(1), XmlNs.html.uri, "b"),
-//          removeAttr(List(1), XmlNs.html.uri, "a"),
-//          setAttr(List(1), "b", XmlNs.svg.uri, "value"),
-//          setAttr(List(1), "a", XmlNs.mathml.uri, "value")
-//        )
-//      }
-//    }
   }
 
   // -----------------------
@@ -188,9 +178,10 @@ object DiffRenderContextTest extends utest.TestSuite {
     val performer = new DiffTestChangesPerformer()
     val renderContext = DiffRenderContext[Nothing]()
     original(renderContext)
-    renderContext.diff(DummyChangesPerformer)
+    renderContext.finalizeDocument()
     renderContext.swap()
     updated(renderContext)
+    renderContext.finalizeDocument()
     renderContext.diff(performer)
     performer.result
   }

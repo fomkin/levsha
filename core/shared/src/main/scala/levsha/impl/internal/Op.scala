@@ -32,6 +32,6 @@ private[impl] object Op {
 
   final val OpSize = 1
   final val OpOpenSize = 17
-  final val OpAttrSize = 14
+  final val OpAttrSize = 12
   final val OpTextSize = 9
 }
