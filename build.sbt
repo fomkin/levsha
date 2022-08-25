@@ -21,26 +21,40 @@ val dontPublishSettings = Seq(
 )
 
 def additionalUnmanagedSources(cfg: Configuration) = Def.setting {
-  val isCrossProject = baseDirectory.value.getName match {
-    case ".js" => true
-    case ".jvm" => true
-    case ".native" => true
-    case _ => false
+  val baseDir = (cfg / baseDirectory).value
+  val crossType = baseDir.getName match {
+    case ".js"     => CrossType.Pure
+    case ".jvm"    => CrossType.Pure
+    case ".native" => CrossType.Pure
+    case "js"     => CrossType.Full
+    case "jvm"    => CrossType.Full
+    case "native" => CrossType.Full
+    case _ => CrossType.Dummy
   }
-  val origSourceDir = (cfg / sourceDirectory).value
-  val sourceDir =
-    if (isCrossProject) file((cfg / baseDirectory).value.getParent) / "src" / origSourceDir.getName
-    else origSourceDir
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((3, _))  => Seq(sourceDir / "scala-3")
-    case Some((2, _))  => Seq(sourceDir / "scala-2")
+  val versionSpecificDirNames = CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((3, _))  => Seq("scala-3")
+    case Some((2, _))  => Seq("scala-2")
     case _             => Seq()
   }
+  val origSourceDir = (cfg / sourceDirectory).value
+
+  val result = crossType match {
+    case CrossType.Pure =>
+      val sourceDir = origSourceDir.getName
+      val f = file(baseDir.getParent) / "src" / origSourceDir.getName
+      versionSpecificDirNames.map(f / _)
+    case CrossType.Full =>
+      val f = file(baseDir.getParent) / "shared" / "src" / origSourceDir.getName
+      versionSpecificDirNames.map(origSourceDir / _) ++ versionSpecificDirNames.map(f / _)
+    case CrossType.Dummy =>
+      versionSpecificDirNames.map(origSourceDir / _)
+  }
+  result
 }
 
 val crossVersionSettings = Seq(
-  crossScalaVersions := Seq("2.13.6", "2.12.11", "3.0.1"),
-  scalaVersion := "3.0.1"
+  crossScalaVersions := Seq("2.13.8", "2.12.15", "3.1.3"),
+  scalaVersion := "3.1.3"
 )
 
 val commonSettings = Seq(
@@ -54,17 +68,17 @@ val commonSettings = Seq(
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
-    "com.lihaoyi" %% "utest" % "0.7.10" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
+    "com.lihaoyi" %%% "utest" % "0.7.10" % "test",
+    "org.scalacheck" %%% "scalacheck" % "1.15.4" % "test"
   ),
   // Add some more source directories
-  unmanagedSourceDirectories in Compile ++= additionalUnmanagedSources(Compile).value,
-  unmanagedSourceDirectories in Test ++= additionalUnmanagedSources(Test).value
+  Compile / unmanagedSourceDirectories ++= additionalUnmanagedSources(Compile).value,
+  Test/ unmanagedSourceDirectories ++= additionalUnmanagedSources(Test).value
 )
 
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .enablePlugins(GitVersioning)
   .enablePlugins(HeaderPlugin)
   .settings(commonSettings: _*)

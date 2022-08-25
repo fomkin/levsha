@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package levsha
+package levsha.impl
 
-final case class XmlNs(shortcut: String, uri: String) {
-  override val hashCode: Int = uri.hashCode
-}
+import levsha.{RenderContext, XmlNs}
 
-object XmlNs {
-  val xlink = XmlNs("xlink", "http://www.w3.org/1999/xlink")
-  val html = XmlNs("html", "http://www.w3.org/1999/xhtml")
-  val svg = XmlNs("svg", "http://www.w3.org/2000/svg")
-  val mathml = XmlNs("mathml", "http://www.w3.org/1998/Math/MathML")
+/**
+  * This render context does nothing
+  */
+class DummyRenderContext[-M] extends RenderContext[M] {
+  def openNode(xmlns: XmlNs, name: String): Unit = {}
+  def closeNode(name: String): Unit = {}
+  def setAttr(xmlNs: XmlNs, name: String, value: String): Unit = {}
+  def setStyle(name: String, value: String): Unit = {}
+  def addTextNode(text: String): Unit = {}
+  def addMisc(misc: M): Unit = {}
+  
 }
