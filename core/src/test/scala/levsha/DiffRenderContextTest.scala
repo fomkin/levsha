@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 /**
   * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
   */
-object DiffRenderContextTest extends utest.TestSuite {
+  object DiffRenderContextTest extends utest.TestSuite {
   
   import utest.{TestableString, TestableSymbol => _, assert}
   import Change._
@@ -119,6 +119,18 @@ object DiffRenderContextTest extends utest.TestSuite {
           remove(List(1, 4))
         )
       }
+    }
+
+    "should replace node with another one" - {
+      val changes = runDiff(
+        original = div(span(div(), div(), div())),
+        updated = div(div())
+      )
+      assert(
+        changes == Seq(
+          create("1_1", "div", XmlNs.html.uri)
+        )
+      )
     }
 
     "should save and restore state" - {

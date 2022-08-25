@@ -178,7 +178,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val t = rhs
     rhs = lhs
     lhs = t
-    reset()
   }
 
   /** Cleanup current buffer */
@@ -208,9 +207,12 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     buff
   }
 
-  def diff(performer: ChangesPerformer): Unit = {
+  def finalizeDocument(): Unit = {
     lhs.flip()
     idb.reset()
+  }
+
+  def diff(performer: ChangesPerformer): Unit = {
 
     while (lhs.hasRemaining()) {
       val opA = op(lhs)
