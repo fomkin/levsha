@@ -139,11 +139,13 @@ import scala.language.implicitConversions
       val performer = new DiffTestChangesPerformer()
       val renderContext1 = DiffRenderContext[Nothing]()
       original(renderContext1)
-      renderContext1.diff(DummyChangesPerformer)
+      renderContext1.finalizeDocument()
       renderContext1.swap()
+      renderContext1.reset()
       val buffer = renderContext1.save()
       val renderContext2 = DiffRenderContext[Nothing](savedBuffer = Some(buffer))
       updated(renderContext2)
+      renderContext2.finalizeDocument()
       renderContext2.diff(performer)
       val changes = performer.result
       assert(changes == Seq(removeAttr("1", XmlNs.html.uri, "class")))
@@ -200,9 +202,10 @@ import scala.language.implicitConversions
     val performer = new DiffTestChangesPerformer()
     val renderContext = DiffRenderContext[Nothing]()
     original(renderContext)
-    renderContext.diff(DummyChangesPerformer)
+    renderContext.finalizeDocument()
     renderContext.swap()
     updated(renderContext)
+    renderContext.finalizeDocument()
     renderContext.diff(performer)
     performer.result
   }

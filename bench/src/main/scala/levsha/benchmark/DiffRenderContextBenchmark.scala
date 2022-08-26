@@ -18,9 +18,8 @@ class DiffRenderContextBenchmark {
 //  }
 
   @Benchmark
-  @BenchmarkMode(Array(Mode.SampleTime))
+  //@BenchmarkMode(Array(Mode.SampleTime))
   def inferChangesBetweenTwoTrees(state: DiffBenchmarkState): Unit = {
-    state.changesPerformer.sb.clear()
     state.renderContext.swap() // set a on lhs, b on rhs
     state.renderContext.diff(state.changesPerformer) // diff a with b
     state.renderContext.swap() // set b on lhs, a on rhs
@@ -48,6 +47,10 @@ object DiffRenderContextBenchmark {
       renderContext.swap()
       b(renderContext)
       renderContext.finalizeDocument()
+    }
+
+    @Setup(Level.Invocation) def cleaPerformer() = {
+      changesPerformer.sb.clear()
     }
   }
 
@@ -487,10 +490,7 @@ object DiffRenderContextBenchmark {
         "v",
         div(clazz := "world", lang := "en", margin @= "5ox", backgroundColor @= "blue"),
         ul(clazz := "cow", padding @= "5ox", margin @= "5ox", backgroundColor @= "blue")
-      ),
-//      (0 until 10000).map { i =>
-//        div(s"Item $i")
-//      }
+      )
     )
   }
 
