@@ -61,15 +61,11 @@ attr {
 
 */
 
-final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, savedBuffer: ByteBuffer)
-  extends StatefulRenderContext[M] {
+final class DiffRenderContext[M](mc: MiscCallback[M], initialBufferSize: Int, savedBuffer: ByteBuffer)
+  extends PortableRenderContext[M](initialBufferSize) with StatefulRenderContext[M] {
 
   if ((initialBufferSize == 0) || ((initialBufferSize & (initialBufferSize - 1)) != 0))
     throw new IllegalArgumentException("initialBufferSize should be power of two")
-
-  private val idb = IdBuilder()
-  private val hashStack = new HashBuilder()
-  private var attrsOpened = false
 
   private var buffer: ByteBuffer = _
   private var lhs: ByteBuffer = _
@@ -91,6 +87,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     lhs.position(lhsPos)
     lhs.limit(lhsLimit)
     lhs.order(ByteOrder.nativeOrder())
+    bytecode = lhs
     buffer.position(buffer.capacity() / 2)
     buffer.limit(buffer.capacity())
     rhs = buffer.slice()
@@ -101,94 +98,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     resizeBuffer(0)
   }
 
-  def openNode(xmlns: XmlNs, name: String): Unit = {
-    closeAttrs()
-    attrsOpened = true
-    idb.incId()
-    idb.incLevel()
-    requestResize(OpOpenSize + name.length * 4)
-    lhs.put(OpOpen.toByte)
-    hashStack.open(lhs)
-//    lhs.putInt(0) // sum
-//    lhs.putInt(0) // end
-//    lhs.put(xmlns.code) // code of xmlns
-//    lhs.putInt(name.hashCode) // hash of name
-//    lhs.put((name.length * 2).toByte) // length in chars of name
-//    putToBuffer(lhs, name)
-    val memCacheId = xmlns.hashCode ^ name.hashCode
-    val memCacheLocal = getLocalHeadersCache
-    var memCache = memCacheLocal(memCacheId)
-    if (memCache == null) {
-      val x = ByteBuffer.allocate(32).order(ByteOrder.nativeOrder())
-      x.putInt(0) // sum
-      x.putInt(0) // end
-      x.put(xmlns.code) // code of xmlns
-      x.putInt(name.hashCode) // hash of name
-      StringHelper.putToBuffer(x, name, false)
-      x.flip()
-      memCacheLocal.update(memCacheId, x)
-      memCache = x
-    }
-    lhs.put(memCache)
-    memCache.rewind()
-  }
-
-  def closeNode(name: String): Unit = {
-    closeAttrs()
-    idb.decLevel()
-    requestResize(OpSize)
-    lhs.put(OpClose.toByte)
-    hashStack.close(lhs)
-  }
-
-  private def setAttrOrStyle(xmlNs: Byte, name: String, value: String, isStyle: Byte): Unit = {
-    requestResize(OpAttrSize + (name.length * 2 + value.length * 2) * 2)
-    val memCacheId = xmlNs.hashCode ^ name.hashCode
-    val memCacheLocal = getLocalHeadersCache
-    var memCache = memCacheLocal(memCacheId)
-    if (memCache == null) {
-      val x = ByteBuffer.allocate(64).order(ByteOrder.nativeOrder())
-      x.put(OpAttr.toByte)
-      x.put(xmlNs)
-      x.putInt(MurmurHash3.stringHash(name))
-      StringHelper.putToBuffer(x, name, false)
-      x.put(isStyle) // this is not a style
-      x.flip()
-      memCacheLocal.update(memCacheId, x)
-      memCache = x
-    }
-    lhs.put(memCache)
-    memCache.rewind()
-    lhs.putInt(MurmurHash3.stringHash(value))
-    StringHelper.putToBuffer(lhs, value, true)
-//    lhs.put(OpAttr.toByte)
-//    lhs.put(xmlNs.code)
-//    lhs.putInt(name.hashCode)
-//    lhs.put((name.length * 2).toByte) // length in chars of name
-//    putToBuffer(lhs, name)
-//    lhs.put(0.toByte) // this is not a style
-//    lhs.putInt(bytes.length)
-//    lhs.put(bytes)
-  }
-
-  def setAttr(xmlNs: XmlNs, name: String, value: String): Unit =
-    setAttrOrStyle(xmlNs.code, name, value, 0.toByte)
-
-  def setStyle(name: String, value: String): Unit =
-    setAttrOrStyle(0.toByte, name, value, 1.toByte)
-
-  def addTextNode(text: String): Unit = {
-    closeAttrs()
-    idb.incId()
-    requestResize(OpTextSize + text.length * 4)
-    val p = lhs.position()
-    lhs.put(OpText.toByte)
-    lhs.putInt(MurmurHash3.stringHash(text)) // string hash
-    StringHelper.putToBuffer(lhs, text, true)
-    hashStack.hashText(lhs, p)
-  }
-
-  def addMisc(misc: M): Unit = {
+  override def addMisc(misc: M): Unit = {
     idb.decLevelTmp()
     mc(idb.mkId, misc)
     idb.incLevel()
@@ -199,6 +109,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val t = rhs
     rhs = lhs
     lhs = t
+    bytecode = lhs
   }
 
   /** Cleanup current buffer */
@@ -336,15 +247,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
     val id = idb.mkId
     idb.decId()
     id
-  }
-
-  private def closeAttrs(): Unit = {
-    if (attrsOpened) {
-      hashStack.hashAttrs(lhs)
-      attrsOpened = false
-      requestResize(OpSize)
-      lhs.put(OpLastAttr.toByte)
-    }
   }
 
   private def getOp(x: ByteBuffer): Byte = {
@@ -581,7 +483,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
   }
 
   /* Check write to lhs is available */
-  private def requestResize(additionalSize: Int) = {
+  override protected def requestResize(additionalSize: Int) = {
     if (additionalSize > lhs.remaining)
       resizeBuffer(additionalSize)
   }
@@ -616,6 +518,7 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
       }
       buff
     }
+    bytecode = lhs
 
     rhs = {
       buffer.position(newSize / 2)
@@ -632,16 +535,6 @@ final class DiffRenderContext[-M](mc: MiscCallback[M], initialBufferSize: Int, s
 }
 
 object DiffRenderContext {
-
-  private val headersCache = new ThreadLocal[IntByteBufferMap]()
-  private def getLocalHeadersCache = {
-    var result = headersCache.get()
-    if (result == null) {
-      result = IntByteBufferMap.ofSize(2048)
-      headersCache.set(result)
-    }
-    result
-  }
 
   final val DefaultDiffRenderContextBufferSize = 1024 * 64
 
@@ -664,6 +557,7 @@ object DiffRenderContext {
   }
 
   trait ChangesPerformer extends FastChangesPerformer {
+    import StringHelper.stringFromSource
     def removeAttr(id: FastId, xmlNs: String, name: String): Unit
     def removeStyle(id: FastId, name: String): Unit
     def setAttr(id: FastId, xmlNs: String, name: String, value: String): Unit
@@ -672,13 +566,6 @@ object DiffRenderContext {
     def create(id: FastId, xmlNs: String, tag: String): Unit
 
     // Fast impl
-
-    private def stringFromSource(source: ByteBuffer, offset: Int, length: Int) = {
-      val sb = new scala.collection.mutable.StringBuilder()
-      StringHelper.appendFromSource(source, sb, offset, length)
-      sb.result()
-    }
-
     def create(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit =
       create(id, xmlNs.uri, stringFromSource(source, nameOffset, nameLength))
     def removeAttr(id: FastId, xmlNs: XmlNs, source: ByteBuffer, nameOffset: Int, nameLength: Int): Unit =
