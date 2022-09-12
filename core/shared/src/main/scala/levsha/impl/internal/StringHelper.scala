@@ -18,11 +18,13 @@ object StringHelper extends StringHelperInstancePlatformSpecific
 trait StringHelperInstancePlatformSpecific extends DefaultStringHelper
 
 trait DefaultStringHelper extends StringHelper {
+
   def stringFromSource(source: ByteBuffer, offset: Int, length: Int): String = {
     val sb = new scala.collection.mutable.StringBuilder()
     appendFromSource(source, sb, offset, length)
     sb.result()
   }
+
   def appendFromSource(source: ByteBuffer, target: mutable.StringBuilder, offset: Int, length: Int): Unit = {
     if (length > 0) {
       var i = 0
@@ -33,6 +35,7 @@ trait DefaultStringHelper extends StringHelper {
       }
     }
   }
+
   def putToBuffer(target: ByteBuffer, source: String, big: Boolean): Unit = {
     val length = source.length
     val byteLength = length * 2

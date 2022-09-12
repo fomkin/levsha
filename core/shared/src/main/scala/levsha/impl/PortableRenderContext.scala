@@ -11,13 +11,16 @@ import scala.annotation.switch
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-abstract class PortableRenderContext[M](initialBufferSize: Int) extends RenderContext[M] {
+import PortableRenderContext.{Result, ApplyResult}
 
-  import PortableRenderContext.PortableResult
+class PortableRenderContext[M](initialBufferSize: Int) extends RenderContext[M] with ApplyResult[M] {
+
   import PortableRenderContext.getLocalHeadersCache
 
   protected val idb: IdBuilder = IdBuilder()
-  protected var bytecode: ByteBuffer = ByteBuffer.allocate(initialBufferSize)
+  protected var bytecode: ByteBuffer = ByteBuffer
+    .allocate(initialBufferSize)
+    .order(ByteOrder.nativeOrder())
 
   private val hashStack = new HashBuilder()
   private var attrsOpened = false
@@ -105,9 +108,31 @@ abstract class PortableRenderContext[M](initialBufferSize: Int) extends RenderCo
     idb.incLevel()
   }
 
-  def result(): PortableResult[M] = {
-    PortableResult(
-      bytecode.flip(),
+  def applyResult(result: Result[M]): Unit = {
+    val sizeTotal = result.bytecode.length
+    requestResize(sizeTotal)
+    val l = result.msOffsets.length
+    var i = 0
+    var prevSrcOffset = 0
+    while (i < l) {
+      val m = result.ms(i)
+      val offset = result.msOffsets(i)
+      val s = offset - prevSrcOffset
+      bytecode.put(result.bytecode, prevSrcOffset, s)
+      addMisc(m)
+      prevSrcOffset = offset
+      i += 1
+    }
+    val s = sizeTotal - prevSrcOffset
+    bytecode.put(result.bytecode, prevSrcOffset, s)
+  }
+
+  def result(): Result[M] = {
+    bytecode.flip()
+    val result = new Array[Byte](bytecode.remaining())
+    bytecode.get(result)
+    Result(
+      result,
       ms.toArray().asInstanceOf[Array[M]],
       msOffsets.toArray
     )
@@ -150,59 +175,70 @@ abstract class PortableRenderContext[M](initialBufferSize: Int) extends RenderCo
 
 object PortableRenderContext {
 
-  final case class PortableResult[M](bytecode: ByteBuffer, ms: Array[M], msOffsets: Array[Int])
+  trait ApplyResult[M] {
+    def applyResult(result: Result[M]): Unit
+  }
 
-  def applyToRenderContext[M](rc: RenderContext[M], portableResult: PortableResult[M]): Unit = {
-    var nodeStack = List.empty[String]
-    var msIndex = 0
-    val msOffsets = portableResult.msOffsets
-    val msCount = portableResult.ms.length
-    val bytecode = portableResult.bytecode
-    while (bytecode.hasRemaining) {
-      while (msIndex < msCount && bytecode.position() == msOffsets(msIndex)) {
-        rc.addMisc(portableResult.ms(msIndex))
-        msIndex += 1
-      }
-      (bytecode.get(): @switch) match {
-        case OpOpen =>
-          bytecode.getInt() // sum
-          bytecode.getInt() // end
-          val xmlNs = XmlNs.fromCode(bytecode.get())
-          bytecode.getInt // nameSum
-          val nameLength = bytecode.get()
-          val nameOffset = bytecode.position()
-          val name = StringHelper.stringFromSource(bytecode, nameOffset, nameLength)
-          nodeStack = name :: nodeStack
-          rc.openNode(xmlNs, name)
-        case OpClose =>
-          val name = nodeStack.head
-          nodeStack = nodeStack.tail
-          rc.closeNode(name)
-        case OpAttr =>
-          val xmlNs = XmlNs.fromCode(bytecode.get())
-          bytecode.getInt // nameSum
-          val nameLength = bytecode.get()
-          val nameOffset = bytecode.position()
-          val name = StringHelper.stringFromSource(bytecode, nameOffset, nameLength)
-          val isStyle = bytecode.get()
-          bytecode.getInt // valueSum
-          val valueLength = bytecode.getInt()
-          val valueOffset = bytecode.position()
-          val value = StringHelper.stringFromSource(bytecode, valueOffset, valueLength)
-          if (isStyle == 1) {
-            rc.setStyle(name, value)
-          } else {
-            rc.setAttr(xmlNs, name, value)
+  final case class Result[M](bytecode: Array[Byte], ms: Array[M], msOffsets: Array[Int]) {
+    def apply(rc: RenderContext[M]): Unit = rc match {
+      case prc: ApplyResult[M] =>
+        prc.applyResult(this)
+      case _ =>
+        var nodeStack = List.empty[String]
+        var msIndex = 0
+        val msOffsets = this.msOffsets
+        val msCount = this.ms.length
+        val bytecode = ByteBuffer.wrap(this.bytecode).order(ByteOrder.nativeOrder())
+        while (bytecode.hasRemaining) {
+          while (msIndex < msCount && bytecode.position() == msOffsets(msIndex)) {
+            rc.addMisc(this.ms(msIndex))
+            msIndex += 1
           }
-        case OpText =>
-          bytecode.getInt // valueSum
-          val valueLength = bytecode.getInt()
-          val valueOffset = bytecode.position()
-          val value = StringHelper.stringFromSource(bytecode, valueOffset, valueLength)
-          rc.addTextNode(value)
-        case OpLastAttr => ()
-        case OpEnd => ()
-      }
+          (bytecode.get(): @switch) match {
+            case OpOpen =>
+              bytecode.getInt() // sum
+              bytecode.getInt() // end
+              val xmlNs = XmlNs.fromCode(bytecode.get())
+              bytecode.getInt // nameSum
+              val nameLength = bytecode.get()
+              val nameOffset = bytecode.position()
+              val name = StringHelper.stringFromSource(bytecode, nameOffset, nameLength)
+              bytecode.position(nameOffset + nameLength)
+              nodeStack = name :: nodeStack
+              rc.openNode(xmlNs, name)
+            case OpClose =>
+              val name = nodeStack.head
+              nodeStack = nodeStack.tail
+              rc.closeNode(name)
+            case OpAttr =>
+              val xmlNs = XmlNs.fromCode(bytecode.get())
+              bytecode.getInt // nameSum
+              val nameLength = bytecode.get()
+              val nameOffset = bytecode.position()
+              val name = StringHelper.stringFromSource(bytecode, nameOffset, nameLength)
+              bytecode.position(nameOffset + nameLength)
+              val isStyle = bytecode.get()
+              bytecode.getInt // valueSum
+              val valueLength = bytecode.getInt()
+              val valueOffset = bytecode.position()
+              val value = StringHelper.stringFromSource(bytecode, valueOffset, valueLength)
+              bytecode.position(valueOffset + valueLength)
+              if (isStyle == 1) {
+                rc.setStyle(name, value)
+              } else {
+                rc.setAttr(xmlNs, name, value)
+              }
+            case OpText =>
+              bytecode.getInt // valueSum
+              val valueLength = bytecode.getInt()
+              val valueOffset = bytecode.position()
+              val value = StringHelper.stringFromSource(bytecode, valueOffset, valueLength)
+              bytecode.position(valueOffset + valueLength)
+              rc.addTextNode(value)
+            case OpLastAttr => ()
+            case OpEnd      => ()
+          }
+        }
     }
   }
 
