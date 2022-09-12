@@ -13,6 +13,46 @@ import scala.util.hashing.MurmurHash3
 
 import PortableRenderContext.{Result, ApplyResult}
 
+/*
+Structures
+
+node {
+  #OPEN
+  int_32 sum
+  int_32 end
+
+  int_8 xml_ns
+  int_32 tag_sum
+  int_8 tag_length
+  char_utf16[tag_length] tag
+
+  attr until #LAST_ATTR
+  node|text until #CLOSE
+}
+
+text {
+  #TEXT
+  int_32 sum
+  int_32 length
+  char_utf16[length] value
+}
+
+attr {
+  #ATTR
+
+  int_8 xml_ns
+  int_32 name_sum
+  int_8 name_length
+  char_utf16[name_length] name
+
+  int_8 is_style
+
+  int_32 value_sum
+  int_32 value_length
+  char_utf16[value_length] value
+}
+
+*/
 class PortableRenderContext[M](initialBufferSize: Int) extends RenderContext[M] with ApplyResult[M] {
 
   import PortableRenderContext.getLocalHeadersCache
@@ -32,7 +72,7 @@ class PortableRenderContext[M](initialBufferSize: Int) extends RenderContext[M] 
     attrsOpened = true
     idb.incId()
     idb.incLevel()
-    requestResize(OpOpenSize + name.length * 4)
+    requestResize(OpOpenSize + name.length * 2)
     bytecode.put(OpOpen.toByte)
     hashStack.open(bytecode)
     val memCacheId = xmlns.hashCode ^ name.hashCode
@@ -62,7 +102,7 @@ class PortableRenderContext[M](initialBufferSize: Int) extends RenderContext[M] 
   }
 
   private def setAttrOrStyle(xmlNs: Byte, name: String, value: String, isStyle: Byte): Unit = {
-    requestResize(OpAttrSize + (name.length * 2 + value.length * 2) * 2)
+    requestResize(OpAttrSize + (name.length * 2 + value.length * 2))
     val memCacheId = xmlNs.hashCode ^ name.hashCode
     val memCacheLocal = getLocalHeadersCache
     var memCache = memCacheLocal(memCacheId)
@@ -92,7 +132,7 @@ class PortableRenderContext[M](initialBufferSize: Int) extends RenderContext[M] 
   def addTextNode(text: String): Unit = {
     closeAttrs()
     idb.incId()
-    requestResize(OpTextSize + text.length * 4)
+    requestResize(OpTextSize + text.length * 2)
     val p = bytecode.position()
     bytecode.put(OpText.toByte)
     bytecode.putInt(MurmurHash3.stringHash(text)) // string hash

@@ -28,39 +28,6 @@ import levsha.impl.internal.StringHelper
 
 import scala.util.hashing.MurmurHash3
 
-/*
-Structures
-
-node {
-  byte OPEN
-  int sum
-  int end
-  int tag_hash_code
-  int xmlns_hash_code
-  attr attr_list[]
-  byte LAST_ATTR
-  node|text child[]
-  byte CLOSE
-}
-
-text {
-  byte TEXT
-  int sum
-  int length
-  byte value[length]
-}
-
-attr {
-  byte ATTR
-  int attr_name_hash_code
-  int xmlns_hash_code (0 for styles)
-  bytes (0 - attr; 1 - style)
-  int length
-  byte value[length]
-}
-
-*/
-
 final class DiffRenderContext[M](mc: MiscCallback[M], initialBufferSize: Int, savedBuffer: ByteBuffer)
   extends PortableRenderContext[M](initialBufferSize) with StatefulRenderContext[M] {
 

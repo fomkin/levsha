@@ -31,7 +31,7 @@ private[impl] object Op {
   // Header bytes sizes
 
   final val OpSize = 1
-  final val OpOpenSize = 17
-  final val OpAttrSize = 12
+  final val OpOpenSize = 15
+  final val OpAttrSize = 16
   final val OpTextSize = 9
 }

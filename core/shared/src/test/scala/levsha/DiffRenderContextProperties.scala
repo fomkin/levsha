@@ -27,11 +27,12 @@ object DiffProperties extends Properties("Diff") {
         renderContext.finalizeDocument()
         try {
           renderContext.diff(performer)
+          true
         } catch {
           case e: Throwable =>
             e.printStackTrace()
+            false
         }
-        true
     }
   }
 
