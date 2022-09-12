@@ -11,18 +11,26 @@ import scala.util.hashing.MurmurHash3
   */
 object Template {
 
-  def apply[M](ttl: Duration = 3.minute): TemplateApply[M] = new TemplateApply[M](ttl.toMillis) // 1 minute
+  def apply[M](ttl: Duration = 3.minute,
+               cleanupProbability: Double = 0.005,
+               initialBufferSize: Int = 1024): TemplateApply[M] = new TemplateApply[M](
+    CacheConfig(
+      ttl.toMillis,
+      (1 / cleanupProbability).toInt,
+      initialBufferSize
+    )
+  )
 
-  final class TemplateApply[M](val ttlMillis: Long) extends AnyVal {
+  final class TemplateApply[M] private[Template] (config: CacheConfig)  {
 
     def apply[A1](f: A1 => Document.Node[M]): A1 => Document.Node[M] = {
-      val cache = new Cache[M](ttlMillis)
+      val cache = new Cache[M](config)
       arg =>
         cache.getNode(arg.hashCode, f(arg))
     }
 
     def apply[A1, A2](f: (A1, A2) => Document.Node[M]): (A1, A2) => Document.Node[M] = {
-      val cache = new Cache[M](ttlMillis)
+      val cache = new Cache[M](config)
       (arg1, arg2) =>
         var hashCode = apply2Seed
         hashCode = MurmurHash3.mix(hashCode, arg1.hashCode)
@@ -31,7 +39,7 @@ object Template {
     }
 
     def apply[A1, A2, A3](f: (A1, A2, A3) => Document.Node[M]): (A1, A2, A3) => Document.Node[M] = {
-      val cache = new Cache[M](ttlMillis)
+      val cache = new Cache[M](config)
       (arg1, arg2, arg3) =>
         var hashCode = apply3Seed
         hashCode = MurmurHash3.mix(hashCode, arg1.hashCode)
@@ -44,12 +52,17 @@ object Template {
   private final val apply2Seed = "apply2".hashCode
   private final val apply3Seed = "apply3".hashCode
 
-  private class Cache[M](val ttlMillis: Long) {
+  private case class CacheConfig(
+      ttlMillis: Long,
+      cleanupInterval: Int,
+      initialBufferSize: Int
+                                )
+  private class Cache[M](config: CacheConfig) {
 
     final val random = new Random()
     final val lastAccess = TrieMap.empty[Int, Long]
     final val cache = TrieMap.empty[Int, Document.Node[M]]
-    var maxPrcSize = 1024 // 1 kB
+    var maxPrcSize: Int = config.initialBufferSize
 
     def getNode(hash: Int, create: => Document.Node[M]): Document.Node[M] = {
       val now = System.currentTimeMillis()
@@ -65,15 +78,13 @@ object Template {
         }
       )
       lastAccess(hash) = now
-      // Try cleanup every ~200 invocations
-      if (random.nextInt(200) == 0) {
-        lastAccess.filterInPlace {
+      // Try cleanup every N invocations
+      if (random.nextInt(config.cleanupInterval) == 0) {
+        lastAccess.foreach {
           case (key, value) =>
-            if ((now - value) < ttlMillis) {
-              true
-            } else {
+            if ((now - value) > config.ttlMillis) {
               cache -= key
-              false
+              lastAccess -= key
             }
         }
       }
